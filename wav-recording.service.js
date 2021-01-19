@@ -24,6 +24,7 @@
             PauseOrResume: pauseOrResumeRecording,
             Stop: stopRecording,
             Download: downloadRecording,
+            DumpData: dumpData,
             GetRecorderState: getRecorderState,
             GetAnalyzer: getAnalyzer
         }
@@ -47,11 +48,11 @@
         let sourceWorkletPromise = createSourceWorklet();
         let recorderWorkletPromise = createRecorderWorklet();
         audioContext.createBufferSource();
-        createAnalyzerNode();
+        analyzer = createAnalyzerNode();
         return Promise.all([sourceWorkletPromise, recorderWorkletPromise])
             .then(() => {
-                let dest = inputSource.connect(recorderNode)
-                    .connect(analyzer);
+                let dest = inputSource.connect(analyzer)
+                    .connect(recorderNode);
                 NeighborScience.Service.Storage.InitLossless(audioContext, 1, processOnline);
             });
     }
@@ -78,7 +79,7 @@
     }
 
     function createAnalyzerNode() {        
-        analyzer = audioContext.createAnalyser();
+        let analyzer = audioContext.createAnalyser();
         analyzer.minDecibels = -90;
         analyzer.maxDecibels = -10;
         analyzer.smoothingTimeConstant = 0.85;
@@ -91,32 +92,37 @@
         } else {
             recorderNode.port.onmessage = onWavEvent;
             recorderNode.port.postMessage({ eventType: 'start' });
-            triggerRecordingStateChanged(recordingState, recordingStates.started);
+            updateRecordingState(recordingStates.started);
         }
     }
 
     function pauseOrResumeRecording() {
         if(recordingState === recordingStates.started){
             recorderNode.port.postMessage({ eventType: 'stop' });
-            triggerRecordingStateChanged(recordingState, recordingStates.paused);
+            updateRecordingState(recordingStates.paused);
         } else { 
             recorderNode.port.postMessage({ eventType: 'start' });
-            triggerRecordingStateChanged(recordingState, recordingStates.started);
+            updateRecordingState(recordingStates.started);
         }
     }
 
     function stopRecording() {
         recorderNode.port.postMessage({ eventType: 'stop' });
-        triggerRecordingStateChanged(recordingState, recordingStates.stopped);
+        updateRecordingState(recordingStates.stopped);
     }
 
     function downloadRecording(userFileName) {
         NeighborScience.Service.Storage.DownloadData(userFileName);
         recorderNode.port.postMessage({ eventType: 'finish' });
-        triggerRecordingStateChanged(recordingState, recordingStates.saved);
+        updateRecordingState(recordingStates.saved);
+    }
+    function dumpData() {
+        NeighborScience.Service.Storage.DumpData();
+        updateRecordingState(recordingStates.notStarted);
     }
 
-    function triggerRecordingStateChanged(oldState, newState){
+    function updateRecordingState(newState){
+        let oldState = recordingState;
         let evt = new CustomEvent('recordingstatechanged', 
         {
             detail: {

@@ -68,6 +68,7 @@
 
     function onStopClicked() {
         recordingService.Stop();
+        NeighborScience.Controller.Visualizer.Reset();
     }
 
     function onDownloadClicked(){
@@ -78,7 +79,7 @@
         NeighborScience.Dialog.Prompt({
             text: 'This will delete all of the audio you\'ve recorded. This cannot be undone.'
         }).then(() => {
-            recordingService.Reset();
+            recordingService.DumpData();
         }, () => {});        
     }
 

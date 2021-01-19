@@ -29,12 +29,14 @@
             Stop: stop,
             PauseOrResume: pauseOrResume,
             Download: download,
+            DumpData: dumpData,
             RecordingStates: recordingStates,
             GetAnalyzer: getAnalyzer
         }
     }
 
-    function triggerRecordingStateChanged(oldState, newState){
+    function updateRecordingState(newState){
+        let oldState = recorderState;
         let evt = new CustomEvent('recordingstatechanged', 
         {
             detail:{
@@ -72,30 +74,36 @@
         if(!mediaRecorder) {       
             return init().then(() => start());
         } else {
-            triggerRecordingStateChanged(recorderState, recordingStates.started);
+            updateRecordingState(recordingStates.started);
             mediaRecorder.start();
         }
     }
 
     function stop() {
-        triggerRecordingStateChanged(recorderState, recordingStates.stopped);
+        updateRecordingState(recordingStates.stopped);
         mediaRecorder.stop();
     }
 
     function pauseOrResume() {
         if(recorderState === recordingStates.paused) {
-            triggerRecordingStateChanged(recorderState, recordingStates.started);
+            updateRecordingState(recordingStates.started);
             mediaRecorder.resume();
         } else {
-            triggerRecordingStateChanged(recorderState, recordingStates.paused);
+            updateRecordingState(recordingStates.paused);
             mediaRecorder.pause();
         }
     }
 
     function download(userFileName) {
-        triggerRecordingStateChanged(recorderState, recordingStates.saved);
+        updateRecordingState(recordingStates.saved);
         NeighborScience.Service.Storage.DownloadData(userFileName);
+        setTimeout(() => updateRecordingState(recordingStates.notStarted), 5000);
         return Promise.resolve(recordingStates.saved);
+    }
+
+    function dumpData() {
+        NeighborScience.Service.Storage.DumpData();
+        updateRecordingState(recordingStates.notStarted);
     }
 
     function getRecorderState() { 

@@ -66,7 +66,7 @@
                     button.classList.add('mx-2');
                     button.innerText = choice.text;
                     let onClick = function() {
-                        if(reject) {
+                        if(choice.reject) {
                             reject();
                         } else {
                             resolve();

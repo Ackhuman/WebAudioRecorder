@@ -8,7 +8,8 @@
     }
 
     NeighborScience.Controller.Visualizer = {
-        Init: init
+        Init: init,
+        Reset: reset
     };
 
     const elements = {
@@ -31,12 +32,19 @@
         visualize();
     }
 
+    function reset() {
+        canvasCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+        canvasCtx.fillStyle = fillColor;
+        canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+        cancelAnimationFrame(drawVisual);
+    }
+
     function visualize() {
         canvasWidth = elements.visualizer.width;
         canvasHeight = elements.visualizer.height;
 
         fillColor = 'rgb(51, 51, 51)';
-        displayColor = 'rgb(68, 255, 68)';
+        drawColor = 'rgb(68, 255, 68)';
 
         var visualSetting = "bars"//visualSelect.value;
 
@@ -65,7 +73,7 @@
 
             analyzer.getByteFrequencyData(dataArrayAlt);
 
-            canvasCtx.fillStyle = drawColor;
+            canvasCtx.fillStyle = fillColor;
             canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
 
             var barWidth = (canvasWidth / bufferLengthAlt) * 2.5;
