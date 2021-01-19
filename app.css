@@ -1,0 +1,15 @@
+.recording-status {
+    width: 200px;
+    /* padding: 6px; */
+    text-align: center;
+    font-family: monospace;
+    font-size: 11pt;
+    background-color: #333;
+    color: #4f4;
+    border-style: inset;
+    border: 2px inset;
+}
+
+.blink {
+    color: #333;
+}
