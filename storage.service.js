@@ -14,6 +14,7 @@
             InitLossy: initLossy,
             InitLossless: initLossless,
             DownloadData: downloadData,
+            DumpData: dumpData,
             DataAvailable: onDataAvailable
         }
     }
@@ -26,9 +27,11 @@
     }
     var audioContext = null;
     var numChannels = null;
-    function initLossless(_audioContext, _numChannels) {
+    var processOffline = true;
+    function initLossless(_audioContext, _numChannels, _processOffline) {
         audioContext = _audioContext;
         numChannels = _numChannels;
+        processOffline = _processOffline;
     }
 
     function downloadData(userFileName) {
@@ -40,6 +43,10 @@
         } 
         let file = new Blob(blobData, { type: mimeType });         
         saveAs(file, fileName);
+    }
+
+    function dumpData() {
+        audioChunks.splice(0, audioChunks.length);
     }
 
     function backupData() {
@@ -89,8 +96,12 @@
         writeString(view, 36, 'data');
         /* data chunk length */
         view.setUint32(40, samples.length * 2, true);
-    
-        floatTo16BitPCM(view, 44, samples);    
+        
+        if (processOffline) {
+            floatTo16BitPCM(view, 44, samples);    
+        } else {
+            writePCMValues(view, 44, samples);
+        }
         return view;
     }
 
@@ -101,12 +112,20 @@
         }
     }
 
+    function writePCMValues(output, offset, input) {
+        input.forEach((sample, index) => 
+            output.setInt16(index * 2 + offset, sample, true)
+        );
+    }
+
     function floatTo16BitPCM(output, offset, input){
-        for (var i = 0; i < input.length; i++, offset+=2){
-            var s = Math.max(-1, Math.min(1, input[i]));
-            let pcmValue = s < 0 ? s * 0x8000 : s * 0x7FFF;
-            output.setInt16(offset, pcmValue, true);
-        }
+        input.forEach((sample, index) => {
+            let clampedSample = Math.max(-1, Math.min(1, sample))
+            let pcmValue = clampedSample < 0 
+                ? clampedSample * 0x8000 
+                : clampedSample * 0x7FFF;
+            output.setInt16(index * 2 + offset, pcmValue, true);
+        });
     }
 
 })();

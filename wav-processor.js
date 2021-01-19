@@ -104,7 +104,7 @@ class WavProcessor extends AudioWorkletProcessor {
             case 'setStereo':
                 this.isMono = false;
                 break;
-            case 'setOnlinePcm':
+            case 'processOnline':
                 this.isOnlinePcm = true;
                 break;
         }

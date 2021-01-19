@@ -1,5 +1,8 @@
+body {
+    height: 100% !important;
+}
+
 .recording-status {
-    width: 200px;
     /* padding: 6px; */
     text-align: center;
     font-family: monospace;
@@ -12,4 +15,22 @@
 
 .blink {
     color: #333;
+}
+
+.modal-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    z-index: 1000;
+    height: 100%;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.modal {
+    margin: auto;
+    z-index: 2000;
+    left: 40%;
+    top: 40%;
 }

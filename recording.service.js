@@ -19,6 +19,7 @@
 
     var recorderState = recordingStates.notStarted;
     var mediaRecorder = null;
+    var analyzer = null;
 
     function recordingService() {
         
@@ -28,7 +29,8 @@
             Stop: stop,
             PauseOrResume: pauseOrResume,
             Download: download,
-            RecordingStates: recordingStates
+            RecordingStates: recordingStates,
+            GetAnalyzer: getAnalyzer
         }
     }
 
@@ -44,14 +46,28 @@
         recorderState = newState;
     }
 
+    const contextOptions = { 
+        latencyHint: 'playback',
+        sampleRate: 44100 
+    };
+
     function init() { 
-        return NeighborScience.Service.Device.GetMediaRecorder()
-            .then(recorder => {
-                mediaRecorder = recorder;
+        const audioContext = new AudioContext(contextOptions);
+        return NeighborScience.Service.Device.GetMediaStream()
+            .then(stream => {            
+                let options = { mimeType: NeighborScience.Service.Device.GetAudioCodec() };
+                inputSource = audioContext.createMediaStreamSource(stream);
+                analyzer = audioContext.createAnalyser();
+                inputSource.connect(analyzer);
+                mediaRecorder = new MediaRecorder(stream, options);;
                 NeighborScience.Service.Storage.InitLossy(recorder);
             });
     }
 
+    function getAnalyzer() {
+        return analyzer;
+    }
+    
     function start() {
         if(!mediaRecorder) {       
             return init().then(() => start());

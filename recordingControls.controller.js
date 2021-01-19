@@ -11,13 +11,15 @@
         OnStartClicked: onStartClicked,
         OnPauseClicked: onPauseClicked,
         OnStopClicked: onStopClicked,
-        OnDownloadClicked: onDownloadClicked
+        OnDownloadClicked: onDownloadClicked,
+        OnDumpClicked: onDumpClicked
     }
     const elements = {
         btnPause: null,
         btnStart: null,
         btnStop: null,
         btnDownload: null,
+        btnDump: null,
         selSources: null,
         selRecordingMethod: null,
         lblTimeDisplay: null
@@ -41,7 +43,9 @@
                 } else {
                     document.getElementById('selSoundSource').style.display = 'none';
                 }
-            }).then(optionsHtml => document.getElementById('selSoundSource').innerHTML = optionsHtml);
+            }).then(optionsHtml => void 0
+                //document.getElementById('selSoundSource').innerHTML = optionsHtml
+            );
     }
 
     function onStartClicked() {
@@ -54,6 +58,8 @@
             ? NeighborScience.Service.WavRecording
             : NeighborScience.Service.Recording;
         recordingService.Start();
+        let analyzer = recordingService.GetAnalyzer();
+        NeighborScience.Controller.Visualizer.Init(analyzer);
     }
 
     function onPauseClicked() {
@@ -66,6 +72,14 @@
 
     function onDownloadClicked(){
         recordingService.Download();
+    }
+
+    function onDumpClicked() {
+        NeighborScience.Dialog.Prompt({
+            text: 'This will delete all of the audio you\'ve recorded. This cannot be undone.'
+        }).then(() => {
+            recordingService.Reset();
+        }, () => {});        
     }
 
     function createDeviceOptionHtml(devices) {
@@ -81,7 +95,7 @@
         let pauseIconClassList = btnPause.querySelector('i').classList;
         switch(recorderState) {
             case recordingStates.notStarted:
-            case recordingStates.downloaded:
+            case recordingStates.saved:
             case recordingStates.started:
             case recordingStates.stopped:
                 pauseIconClassList.replace('fa-play', 'fa-pause');
@@ -95,15 +109,15 @@
     function setDisabledState(recorderState) {
         switch(recorderState) {
             case recordingStates.notStarted:
-            case recordingStates.downloaded:
-                setButtonsDisabledState(false, true, true, true, false);
+            case recordingStates.saved:
+                setButtonsDisabledState(false, true, true, true, true, false);
                 break;
             case recordingStates.started:
             case recordingStates.paused:
-                setButtonsDisabledState(true, false, false, true, true);
+                setButtonsDisabledState(true, false, false, true, true, true);
                 break;
             case recordingStates.stopped:
-                setButtonsDisabledState(true, false, true, false, false);
+                setButtonsDisabledState(true, false, true, false, false, false);
                 break;
         }
     }
@@ -113,13 +127,15 @@
         btnStopDisabled,
         btnPauseDisabled, 
         btnDownloadDisabled,
+        btnDumpDisabled,
         selSoundSourceDisabled
     ) {
-        btnStart.disabled = btnStartDisabled;
-        btnStop.disabled = btnStopDisabled;
-        btnPause.disabled = btnPauseDisabled;
-        btnDownload.disabled = btnDownloadDisabled;
-        selSoundSource.disabled = selSoundSourceDisabled;
+        elements.btnStart.disabled = btnStartDisabled;
+        elements.btnStop.disabled = btnStopDisabled;
+        elements.btnPause.disabled = btnPauseDisabled;
+        elements.btnDownload.disabled = btnDownloadDisabled;
+        elements.btnDump.disabled = btnDumpDisabled;
+        //selSoundSource.disabled = selSoundSourceDisabled;
     }
 
 })();

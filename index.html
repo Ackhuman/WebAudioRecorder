@@ -10,11 +10,13 @@
     
     <!-- App -->
     <link rel="stylesheet" href="app.css"/>
+    <script type="text/javascript" src="dialog.js"></script>
     <script type="text/javascript" src="error.service.js"></script>
     <script type="text/javascript" src="device.service.js"></script>
     <script type="text/javascript" src="storage.service.js"></script>
     <script type="text/javascript" src="wav-recording.service.js"></script>
     <script type="text/javascript" src="recording.service.js"></script>
+    <script type="text/javascript" src="visualizer.controller.js"></script>
     <script type="text/javascript" src="statusDisplay.controller.js"></script>
     <script type="text/javascript" src="recordingControls.controller.js"></script>
     <script type="text/javascript" src="index.js"></script>
@@ -41,18 +43,29 @@
 
                 <div class="card my-2">
                     <div id="recordingControls" class="card-body">
-                        <div class="row">
-                            <div id="recordingStatus" class="recording-status col-sm-4 align-middle py-2">
-                                <span id="lblTimeDisplay">
+                        <div class="row recording-status mx-2">
+                            <span id="recordingStatus" class=" col-sm-3 align-middle py-2">
+                                <div id="lblTimeDisplay">
                                     00:00:00
-                                </span>
-                                <span id="displayDivider">
-                                    &ndash;
-                                </span>
-                                <span id="lblStatusDisplay">
+                                </div>
+                                <div id="displayDivider">
+                                    &mdash;
+                                </div>
+                                <div id="lblStatusDisplay">
                                     Not Started
-                                </span>
-                            </div>
+                                </div>
+                            </span>
+                            <span id="colVisualizer" class="col-sm-9">
+                                <canvas id="visualizer"></canvas>
+                            </span>
+                        </div>
+                        <!-- <div>
+                            <select id="selSoundSource"></select>
+                        </div> -->
+                        <div id="containerControls" class="my-1">
+                            <!--Controls will be inserted here-->
+                        </div>
+                        <div class="row">                            
                             <div class="col-sm-3 align-middle text-right px-0 py-2">
                                 Recording Method:
                             </div>
@@ -62,12 +75,6 @@
                                     <option value="lossy">WEBM/OGG recording</option>
                                 </select>
                             </div>
-                        </div>
-                        <div>
-                            <select id="selSoundSource"></select>
-                        </div>
-                        <div id="containerControls" class="my-1">
-                            <!--Controls will be inserted here-->
                         </div>
                     </div>
                 </div>
@@ -106,6 +113,14 @@
             title="Download Audio">
             <i class="fa fa-download"></i>
         </button>
+        <button id="btnDump"
+            type="button" 
+            class="btn btn-link"
+            disabled="disabled"
+            onclick="NeighborScience.Controller.RecordingControls.OnDumpClicked()"
+            title="Dump Audio and Restart">
+            <i class="fa fa-trash text-danger"></i>
+        </button>
     </script>
 
     <script type="text/template" id="tplFileNameModal">
@@ -122,6 +137,7 @@
     </script>
 
     <script id="initScript" type="text/javascript">
+        NeighborScience.Dialog.Init();
         NeighborScience.Controller.Main.Init();
         NeighborScience.Controller.RecordingControls.Init();
         NeighborScience.Controller.StatusDisplay.Init();

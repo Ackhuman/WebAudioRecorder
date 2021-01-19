@@ -24,14 +24,18 @@
             PauseOrResume: pauseOrResumeRecording,
             Stop: stopRecording,
             Download: downloadRecording,
-            GetRecorderState: getRecorderState
+            GetRecorderState: getRecorderState,
+            GetAnalyzer: getAnalyzer
         }
     }
+    
     var audioContext = null;
     var inputSource = null;
     var recorderNode = null;
     var isRecordingParameter = null;
     var recordingState = null;
+    var processOnline = true;
+    var analyzer = null;
 
     const contextOptions = { 
         latencyHint: 'playback',
@@ -42,15 +46,18 @@
         audioContext = new AudioContext(contextOptions);
         let sourceWorkletPromise = createSourceWorklet();
         let recorderWorkletPromise = createRecorderWorklet();
-        let delayNode = audioContext.createDelay(2);
         audioContext.createBufferSource();
+        createAnalyzerNode();
         return Promise.all([sourceWorkletPromise, recorderWorkletPromise])
             .then(() => {
                 let dest = inputSource.connect(recorderNode)
-                    // .connect(delayNode)
-                    // .connect(audioContext.destination);
-                NeighborScience.Service.Storage.InitLossless(audioContext, 1);
+                    .connect(analyzer);
+                NeighborScience.Service.Storage.InitLossless(audioContext, 1, processOnline);
             });
+    }
+
+    function getAnalyzer() {
+        return analyzer;
     }
 
     function createSourceWorklet() { 
@@ -64,8 +71,18 @@
         return audioContext.audioWorklet.addModule('wav-processor.js')
             .then(function() {
                 recorderNode = new AudioWorkletNode(audioContext, 'wav-processor');
-                isRecordingParameter = recorderNode.parameters.get('isRecording');
+                if (processOnline) {
+                    recorderNode.port.postMessage({ eventType: 'processOnline' });
+                }
             });
+    }
+
+    function createAnalyzerNode() {        
+        analyzer = audioContext.createAnalyser();
+        analyzer.minDecibels = -90;
+        analyzer.maxDecibels = -10;
+        analyzer.smoothingTimeConstant = 0.85;
+        return analyzer;
     }
 
     function startRecording() {
