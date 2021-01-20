@@ -31,8 +31,11 @@
         canvasCtx = elements.visualizer.getContext("2d");
     }
 
-    function start(_analyzer) {
-        analyzer = _analyzer;
+    function start() {
+        recordingService = useWavRecording 
+            ? NeighborScience.Service.WavRecording
+            : NeighborScience.Service.Recording;
+        analyzer = recordingService.GetAnalyzer();
         visualize();
     }
 

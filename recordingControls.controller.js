@@ -32,7 +32,6 @@
             .forEach(name => elements[name] = document.getElementById(name));
         initSoundSourceSelector();
         window.addEventListener('recordingstatechanged', evt => onRecordingStateChanged(evt.detail.oldState, evt.detail.newState));
-        NeighborScience.Controller.Visualizer.Init();
     }
 
     function initSoundSourceSelector() {        
@@ -44,9 +43,10 @@
                 } else {
                     document.getElementById('selSoundSource').style.display = 'none';
                 }
-            }).then(optionsHtml => void 0
-                //document.getElementById('selSoundSource').innerHTML = optionsHtml
-            );
+            })
+            // .then(optionsHtml => void 0
+            //     document.getElementById('selSoundSource').innerHTML = optionsHtml
+            // );
     }
 
     function onStartClicked() {
@@ -59,8 +59,6 @@
             ? NeighborScience.Service.WavRecording
             : NeighborScience.Service.Recording;
         recordingService.Start();
-        let analyzer = recordingService.GetAnalyzer();
-        NeighborScience.Controller.Visualizer.Start(analyzer);
     }
 
     function onPauseClicked() {
@@ -69,7 +67,6 @@
 
     function onStopClicked() {
         recordingService.Stop();
-        NeighborScience.Controller.Visualizer.Reset();
     }
 
     function onDownloadClicked() {
