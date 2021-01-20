@@ -9,6 +9,7 @@
 
     NeighborScience.Controller.Visualizer = {
         Init: init,
+        Start: start,
         Reset: reset
     };
 
@@ -24,10 +25,13 @@
     var drawColor = 'rgb(255, 255, 255)';
     var drawVisual = null;
 
-    function init(_analyzer) { 
+    function init() { 
         Object.getOwnPropertyNames(elements)
             .forEach(name => elements[name] = document.getElementById(name));
         canvasCtx = elements.visualizer.getContext("2d");
+    }
+
+    function start(_analyzer) {
         analyzer = _analyzer;
         visualize();
     }
@@ -63,7 +67,6 @@
     function drawBars() {
         analyzer.fftSize = 256;
         var bufferLengthAlt = analyzer.frequencyBinCount;
-        console.log(bufferLengthAlt);
         var dataArrayAlt = new Uint8Array(bufferLengthAlt);
 
         canvasCtx.clearRect(0, 0, canvasWidth, canvasHeight);

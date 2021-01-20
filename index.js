@@ -11,12 +11,18 @@
         Init: init
     };
 
-    function init(){
-        let controlTemplate = document.getElementById('tplControls');
-        let controlContainer = document.getElementById('containerControls');
-        controlContainer.innerHTML = controlTemplate.innerHTML;
+    function init() {
+        insertTemplate('tplControls', 'containerControls');
+        insertTemplate('tplDisplay', 'displayContainer');
+        insertTemplate('tplIntroText', 'introTextContainer');
         Object.assign(NeighborScience.Controller.Main, NeighborScience.Controller.Recording);
     }
     
+
+    function insertTemplate(templateId, containerId) {
+        let controlTemplate = document.getElementById(templateId);
+        let controlContainer = document.getElementById(containerId);
+        controlContainer.innerHTML = controlTemplate.innerHTML;
+    }
 
 })();

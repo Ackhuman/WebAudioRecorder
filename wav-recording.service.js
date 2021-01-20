@@ -33,7 +33,7 @@
     var audioContext = null;
     var inputSource = null;
     var recorderNode = null;
-    var isRecordingParameter = null;
+    var audioStream = null;
     var recordingState = null;
     var processOnline = true;
     var analyzer = null;
@@ -64,6 +64,7 @@
     function createSourceWorklet() { 
         return NeighborScience.Service.Device.GetMediaStream()
             .then(function(stream) {
+                audioStream = stream;
                 inputSource = audioContext.createMediaStreamSource(stream);
             });
     }
@@ -114,10 +115,16 @@
     function downloadRecording(userFileName) {
         NeighborScience.Service.Storage.DownloadData(userFileName);
         recorderNode.port.postMessage({ eventType: 'finish' });
+        inputSource = null;
+        audioStream.getTracks().forEach(track => track.stop());
         updateRecordingState(recordingStates.saved);
     }
+
     function dumpData() {
         NeighborScience.Service.Storage.DumpData();
+        recorderNode.port.postMessage({ eventType: 'finish' });
+        inputSource = null;
+        audioStream.getTracks().forEach(track => track.stop());
         updateRecordingState(recordingStates.notStarted);
     }
 

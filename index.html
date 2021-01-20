@@ -25,47 +25,22 @@
 
     <div class="container-fluid">
         <div class="row">
-            <div class="col-sm-12 col-md-6">
+            <div class="col-sm-12 col-md-12 col-lg-6">
                 <div class="card my-2">
-                    <div class="card-body">
-                        <h2>Neighbor Science sound recorder</h2>
-                        <div class="row">
-                            <div class="col-sm-12">
-                                <h5>Instructions:</h5>
-                                <p>
-                                    Use the controls to start the recording. You can pause and resume if needed.
-                                    When you are done recording, press the stop button and then the download button.
-                                </p>
-                            </div>
-                        </div>
+                    <div class="card-body" id="introTextContainer">
+                        <!-- Intro text will be inserted here -->
                     </div>
                 </div>
 
                 <div class="card my-2">
                     <div id="recordingControls" class="card-body">
-                        <div class="row recording-status mx-2">
-                            <span id="recordingStatus" class=" col-sm-3 align-middle py-2">
-                                <div id="lblTimeDisplay">
-                                    00:00:00
-                                </div>
-                                <div id="displayDivider">
-                                    &mdash;
-                                </div>
-                                <div id="lblStatusDisplay">
-                                    Not Started
-                                </div>
-                            </span>
-                            <span id="colVisualizer" class="col-sm-9 py-2">
-                                <canvas id="visualizer" height="150" width="400"></canvas>
-                            </span>
+                        <div id="displayContainer" class="row recording-status mx-2">
+                            <!-- Display will be inserted here -->
                         </div>
-                        <!-- <div>
-                            <select id="selSoundSource"></select>
-                        </div> -->
                         <div id="containerControls" class="my-1">
                             <!--Controls will be inserted here-->
                         </div>
-                        <div class="row">                            
+                        <div class="row" style="display:none;">                            
                             <div class="col-sm-3 align-middle text-right px-0 py-2">
                                 Recording Method:
                             </div>
@@ -81,6 +56,34 @@
             </div>
         </div>
     </div>
+    <script type="text/template" id="tplIntroText">
+        <h2>Neighbor Science sound recorder</h2>
+        <div class="row">
+            <div class="col-sm-12">
+                <h5>Instructions:</h5>
+                <p>
+                    Use the controls to start the recording. You can pause and resume if needed.
+                    When you are done recording, press the stop button and then the download button.
+                </p>
+            </div>
+        </div>
+    </script>
+    <script type="text/template" id="tplDisplay">
+        <span id="recordingStatus" class=" col-sm-3 align-middle py-2">
+            <div id="lblTimeDisplay">
+                00:00:00
+            </div>
+            <div id="displayDivider">
+                &mdash;
+            </div>
+            <div id="lblStatusDisplay">
+                Not Started
+            </div>
+        </span>
+        <span id="colVisualizer" class="col-sm-9 py-2">
+            <canvas id="visualizer" height="150" width="400"></canvas>
+        </span>
+    </script>
     <script type="text/template" id="tplControls">
         <button id="btnStart"
             type="button" 

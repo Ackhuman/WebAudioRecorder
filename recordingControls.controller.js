@@ -32,6 +32,7 @@
             .forEach(name => elements[name] = document.getElementById(name));
         initSoundSourceSelector();
         window.addEventListener('recordingstatechanged', evt => onRecordingStateChanged(evt.detail.oldState, evt.detail.newState));
+        NeighborScience.Controller.Visualizer.Init();
     }
 
     function initSoundSourceSelector() {        
@@ -59,7 +60,7 @@
             : NeighborScience.Service.Recording;
         recordingService.Start();
         let analyzer = recordingService.GetAnalyzer();
-        NeighborScience.Controller.Visualizer.Init(analyzer);
+        NeighborScience.Controller.Visualizer.Start(analyzer);
     }
 
     function onPauseClicked() {
@@ -71,8 +72,30 @@
         NeighborScience.Controller.Visualizer.Reset();
     }
 
-    function onDownloadClicked(){
-        recordingService.Download();
+    function onDownloadClicked() {
+        let fileNameDialogConfig = {
+            title: 'Save Audio',
+            height: 240,
+            text: 'If you want, enter a name for the file. The best practice would be to use your name and some description of what you\'re talking about.',
+            valueInputs: [
+                {
+                    type: 'text',
+                    placeholder: 'Enter a file name (optional)',
+                    name: 'fileName'
+                }
+            ],
+            choices: [
+                {
+                    text: 'Save',
+                    cssClass: 'btn btn-primary',
+                    reject: false
+                }
+            ]
+        };
+        NeighborScience.Dialog.Prompt(fileNameDialogConfig)
+            .then(({fileName}) => 
+                recordingService.Download(fileName)
+            );
     }
 
     function onDumpClicked() {
@@ -118,7 +141,7 @@
                 setButtonsDisabledState(true, false, false, true, true, true);
                 break;
             case recordingStates.stopped:
-                setButtonsDisabledState(true, false, true, false, false, false);
+                setButtonsDisabledState(false, false, true, false, false, false);
                 break;
         }
     }
