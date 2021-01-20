@@ -32,6 +32,9 @@
     }
 
     function start() {
+        let recordingMethod = NeighborScience.Service.Device.GetRecordingMethod();
+        //set the correct recording service
+        let useWavRecording = recordingMethod == "lossless";
         recordingService = useWavRecording 
             ? NeighborScience.Service.WavRecording
             : NeighborScience.Service.Recording;

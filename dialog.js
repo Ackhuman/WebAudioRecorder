@@ -109,7 +109,7 @@
         button.classList.add('mx-2');
         button.innerText = choice.text;
         let onClick = function() {
-            let formValue = valueResolver() || null;
+            let formValue = valueResolver() || choice.value || null;
             if(choice.reject) {
                 reject();
             } else {
