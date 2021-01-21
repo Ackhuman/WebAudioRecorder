@@ -99,6 +99,9 @@ class WavProcessor extends AudioWorkletProcessor {
                 this.isRecording = false;
                 break;
             case 'finish':
+                this.port.postMessage({
+                    eventType: 'finish'
+                });
                 this.isFinished = true;
                 break;
             case 'setStereo':

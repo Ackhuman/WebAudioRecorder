@@ -94,16 +94,15 @@
         } else {
             //recorderNode.port.onmessage = onWavEvent;
             initFileStream()
-                .then(function(fileWriter) {
+                .then(function(fileStream) {
                     let audioStream = processorToReadableStream(recorderNode.port);
-                    return {audioStream, fileWriter};
+                    return {audioStream, fileStream};
                 })
-                .then(function({ audioStream, fileWriter }) {
+                .then(function({ audioStream, fileStream }) {
                     recorderNode.port.onerror = onWavError;
                     recorderNode.port.postMessage({ eventType: 'start' });
                     updateRecordingState(recordingStates.started);
-                    streamAudioToFile(audioStream, fileWriter);
-                    //audioStream.pipeTo(fileStream);
+                    streamAudioToFile(audioStream, fileStream);
                 });
         }
     }
@@ -179,6 +178,23 @@
         };
         const handle = await window.showSaveFilePicker(options);
         const fileStream = await handle.createWritable();        
+        return fileStream;
+        
+    }
+    async function initFileWriter() {
+        let mimeType = NeighborScience.Service.Device.GetAudioMimeType();
+        let fileExtension = NeighborScience.Service.Device.GetAudioFileExtension();
+        let acceptConfig = Object.defineProperty({}, mimeType, { get: () => [fileExtension] });
+        const options = {
+            types: [
+                {
+                    description: 'Audio Files',
+                    accept: acceptConfig
+                },
+            ],
+        };
+        const handle = await window.showSaveFilePicker(options);
+        const fileStream = await handle.createWritable();        
         let writer = fileStream.getWriter();
         return writer.ready
             .then(function() {
@@ -195,28 +211,52 @@
         let fileStream = await initFileStream();
         return { audioStream, fileStream };
     }
-    async function streamAudioToFile(audioStream, fileWriter) {
+    
+    async function writeAudioToFile(audioStream, fileWriter) {
         //todo: finish with file headers
-        //note: pipeTo is only supported in Chrome.
-        //return audioStream.pipeTo(fileStream)        
         let audioReader = audioStream.getReader();
         function stream() {
             audioReader.read()
-                .then(function({done, value}) {
-                    return fileWriter.ready.then(() => value);
-                })
-                .then(function(chunk) { 
-                    return fileWriter.write({ type: 'write', data: chunk });
-                })
-                .then(function() {
-                    stream();
-                });
+                .then(
+                    function({done, value}) { 
+                        if(done) {
+                            return writeHeadersToFile(fileWriter);
+                        } else {
+                            return fileWriter.write({ type: 'write', data: value })
+                                .then(stream);
+                        }
+                    }, 
+                    onError
+                );
         }
         stream();
     }
+    function streamAudioToFile(audioStream, fileStream) {
+        //todo: finish with file headers
+        //note: pipeTo is only supported in Chrome.
+        /*
+         * Errors: Uncaught (in promise) TypeError: Failed to execute 'write' on 'UnderlyingSinkBase': required member type is undefined.
+            wav-recording.service.js:262 Uncaught TypeError: Failed to execute 'enqueue' on 'ReadableStreamDefaultController': Cannot enqueue a chunk into a closed readable stream
+                at MessagePort.port.onmessage
+         * 
+         */
+        let headerWriteMethod = NeighborScience.Service.Storage.WriteWavHeader;
+        let headerLengthBytes = 44;
+        let writableFileStream = fileWritableStreamToWritableStream(fileStream, headerWriteMethod, headerLengthBytes);
+        return audioStream.pipeTo(writableFileStream);
+    }
+    var buffer = new ArrayBuffer(128);
+    function writeBuffer(fileWriter, audioBits) {
+        audioBits.map((bit, i) => buffer[i] = bit);
+        return fileWriter.write({ type: 'write', data: buffer });
+    }
 
+    function onError(err) {
+        console.log(err.message);
+    }
     function writeHeadersToFile(fileStream) {
 
+        return fileStream.close();
     }
 
     function processorToReadableStream(port) {
@@ -232,8 +272,52 @@
                             break;
                     }
                 }
+                port.onerror = err => {
+                    controller.error(err);
+                }
             }
         });
+    }
+
+    function fileWritableStreamToWritableStream(fileStream, headerWriteMethod, headerLengthBytes) {
+        const queuingStrategy = new CountQueuingStrategy({ highWaterMark: 1 });
+        //let writer = fileStream.getWriter();
+        let writer = fileStream;
+        let bytesWritten = 0;
+        const writableStream = new WritableStream({
+            // Implement the sink
+            async start(controller) {
+                if(headerLengthBytes) {
+                    // let headerBuffer = new ArrayBuffer(headerLengthBytes);
+                    // let view = new DataView(headerBuffer);
+                    // let headerBytes = headerWriteMethod(view, bytesWritten);
+                    //return writer.write({ type: 'write', data: headerBytes })
+                    await writer.truncate(headerLengthBytes + 1000);
+                    return writer.seek(headerLengthBytes);
+                    //return writer.write({ type: 'seek', position: headerLengthBytes });
+                }
+            },
+            async write(chunk) {
+                bytesWritten += chunk.length;
+                return writer.write({ type: 'write', data: chunk });
+            },
+            async close() {
+                let promise = Promise.resolve();
+                if(headerWriteMethod) {
+                    let headerBuffer = new ArrayBuffer(headerLengthBytes);
+                    let view = new DataView(headerBuffer);
+                    let headerBytes = headerWriteMethod(view, bytesWritten);
+                    //promise = writer.write({ type: 'write', data: headerBytes, position: 0 })
+                    promise = writer.seek(0)
+                        .then(() => writer.write({type: 'write', data: headerBytes.buffer }));
+                }
+                return promise.then(() => writer.close());
+            },
+            abort(err) {
+                console.log("Sink error:", err);
+            }
+        });
+        return writableStream;
     }
 
     function onWavError(err){

@@ -17,7 +17,8 @@
             HasAudio: () => audioChunks.length > 0,
             DownloadData: downloadData,
             DumpData: dumpData,
-            DataAvailable: onDataAvailable
+            DataAvailable: onDataAvailable,
+            WriteWavHeader: writeWavHeader
         }
     }
 
@@ -122,6 +123,7 @@
         writeString(view, 36, 'data');
         /* data chunk length */
         view.setUint32(40, fileLength * 2, true);
+        return view;
     }
 
 
