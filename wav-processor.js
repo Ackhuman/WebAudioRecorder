@@ -35,15 +35,14 @@ class WavProcessor extends AudioWorkletProcessor {
         let inputStream = inputs[0];
         var sampleIndex = 0;
         var offset = 0;
-        while(sampleIndex < inputStream[0].length * 2) {
+        while(sampleIndex < inputStream[0].length) {
             let lSample = inputStream[0][sampleIndex];
             let rSample = inputStream[1][sampleIndex];
             let monoSample = this.mixDownToMono(lSample, rSample);
             let clampedSample = this.clamp(monoSample, -1, 1);
             let pcmSample = this.get16BitPcm(clampedSample);
-            this._view.setInt16(offset, pcmSample, true);
+            this._view.setInt16(sampleIndex * 2, pcmSample, true);
             sampleIndex++;
-            offset += 2;
         }
         return this._view.buffer.slice();
     }
@@ -62,47 +61,6 @@ class WavProcessor extends AudioWorkletProcessor {
             : sample * 0x7FFF;
     }
     
-    write16BitPcm(inputs) {
-        
-        inputs.forEach(function(inputSample, index) {
-            var outputSample = Math.max(-1, Math.min(1, inputSample));
-            let pcmValue = outputSample < 0 
-                ? outputSample * 0x8000
-                : outputSample * 0x7FFF;
-            this._view.setInt16(index, pcmValue, true);
-        }.bind(this));
-        return this._view.buffer;
-    }
-
-    writeMono(inputs) {
-        //check if already mono
-        if(inputs[0].length === 1){
-            return inputs[0][0];
-        }
-        //mix down to one channel
-        let inputStream = inputs[0];            
-        let monoBuffer = [];
-        var i = 0;
-        while(i < inputStream[0].length) {
-            let monoValue = (inputStream[0][i] + inputStream[1][i]) / 2;
-            monoBuffer.push(monoValue);
-            i++;
-        }
-        return monoBuffer;
-    }
-
-    writeInterleaved(inputs) {
-        let interleavedBuffer = [];
-        //interleave the channel data and push it to the buffer
-        let inputStream = inputs[0];            
-        inputStream[0].forEach((_, index) => {
-            inputStream.forEach(channel => {
-                interleavedBuffer.push(channel[index]);
-            })
-        });
-        return interleavedBuffer;
-    }
-
     onMessage(evt) {
         let messageType = evt.data.eventType;
         switch(messageType) {

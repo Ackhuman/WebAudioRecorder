@@ -186,12 +186,6 @@
     function streamAudioToFile(audioStream, fileStream) {
         //todo: finish with file headers
         //note: pipeTo is only supported in Chrome.
-        /*
-         * Errors: Uncaught (in promise) TypeError: Failed to execute 'write' on 'UnderlyingSinkBase': required member type is undefined.
-            wav-recording.service.js:262 Uncaught TypeError: Failed to execute 'enqueue' on 'ReadableStreamDefaultController': Cannot enqueue a chunk into a closed readable stream
-                at MessagePort.port.onmessage
-         * 
-         */
         let headerWriteMethod = NeighborScience.Service.Storage.WriteWavHeader;
         let headerLengthBytes = 44;
         let writableFileStream = fileWritableStreamToWritableStream(fileStream, headerWriteMethod, headerLengthBytes);
@@ -232,11 +226,13 @@
         const writableStream = new WritableStream({
             // Implement the sink
             async start(controller) {
+                // We should resize the file to 0 to overwrite it.
+                await fileStream.truncate(0);
                 if(headerLengthBytes) {
                     //Currently it's not possible to seek past the end of a file.
                     //So first, we need to "truncate" which really just means to resize it.
-                    //May as well add some extre room since we're going to be filling it anyway.
-                    await fileStream.truncate(headerLengthBytes + 50000);
+                    //May as well add some extra room since we're going to be filling it anyway.
+                    await fileStream.truncate(headerLengthBytes);
                     return fileStream.seek(headerLengthBytes);
                 }
             },
@@ -246,18 +242,18 @@
             },
             async close() {
                 let promise = Promise.resolve();
-                if(headerWriteMethod) {
+                if (headerWriteMethod) {
                     let headerBuffer = new ArrayBuffer(headerLengthBytes);
                     let view = new DataView(headerBuffer);
                     let headerBytes = headerWriteMethod(view, bytesWritten);
                     //Seek back to the beginning of the file and write the header using the size counted.
                     promise = fileStream.seek(0)
-                        .then(() => fileStream.write({type: 'write', data: headerBytes.buffer }));
+                        .then(() => fileStream.write({ type: 'write', data: headerBytes.buffer }));
                 }
                 return promise.then(() => fileStream.close());
             },
             abort(err) {
-                console.log("Sink error:", err);
+                onWavError(err);
             }
         });
         return writableStream;
