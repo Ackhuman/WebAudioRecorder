@@ -116,10 +116,12 @@
                 }
             ]
         };
-        NeighborScience.Dialog.Prompt(fileNameDialogConfig)
-            .then(({fileName}) => 
+        let fileName = '';
+        //temporarily commented out
+        //NeighborScience.Dialog.Prompt(fileNameDialogConfig)
+        //    .then(({fileName}) => 
                 recordingService.Download(fileName)
-            );
+        //    );
     }
 
     function onDumpClicked() {

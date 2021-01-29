@@ -65,6 +65,7 @@
     function stopRecordedTimeDisplay() {
         clearInterval(recordedTimeInterval);
         recordedTimeInterval = null;
+        recordedTimeDurationSeconds = 0;
         if(!pausedTimeInterval){
             pausedTimeInterval = setInterval(function() {
                 elements.lblTimeDisplay.classList.toggle('blink');

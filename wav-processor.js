@@ -1,63 +1,77 @@
 class WavProcessor extends AudioWorkletProcessor {
+    NUM_SAMPLES = 128;
     constructor() {
         super();
-        this.port.onmessage = this.onMessage.bind(this);
+        this.port.onmessage = this.onMessage.bind(this);        
+        this._buffer = new ArrayBuffer(this.NUM_SAMPLES * 2);
+        this._view = new DataView(this._buffer);
     }
-    // static get parameterDescriptors() {
-    //     return [
-    //         {
-    //             name: 'isRecording',
-    //             defaultValue: 0,
-    //             automationRate: 'a-rate'
-    //         },
-    //         {
-    //             name: 'isMono',
-    //             defaultValue: 1,
-    //             automationRate: 'k-rate'
-    //         }
-    //     ];
-    // }
-
     //parameters
     isRecording = false;
     isFinished = false;
     isMono = true;
     isOnlinePcm = false;
+    _buffer = null;
+    _view = null;
 
     _recordingStopped() {
         this.port.postMessage({
             eventType: 'stop'
         });
     }
-    // constructor(){
-    //     super();
-    //     this._bufferSize = 4096;
-    // }
+
     process (inputs, outputs, parameters) {
         if (!this.isRecording) {
             return !this.isFinished;
         }
-        let buffer = this.isMono
-            ? this.writeMono(inputs)
-            : this.writeInterleaved(inputs);
-        if(this.isOnlinePcm) {
-            buffer = this.write16BitPcm(buffer);
-        }
         this.port.postMessage({
             eventType: 'dataavailable',
-            audioBuffer: buffer
+            audioBuffer: this.writeBuffer(inputs)
         });
         return true;
     }
 
+    writeBuffer(inputs){
+        let inputStream = inputs[0];
+        var sampleIndex = 0;
+        var offset = 0;
+        while(sampleIndex < inputStream[0].length * 2) {
+            let lSample = inputStream[0][sampleIndex];
+            let rSample = inputStream[1][sampleIndex];
+            let monoSample = this.mixDownToMono(lSample, rSample);
+            let clampedSample = this.clamp(monoSample, -1, 1);
+            let pcmSample = this.get16BitPcm(clampedSample);
+            this._view.setInt16(offset, pcmSample, true);
+            sampleIndex++;
+            offset += 2;
+        }
+        return this._view.buffer.slice();
+    }
+
+    mixDownToMono(lSample, rSample) {
+        return (lSample + rSample) / 2;
+    }
+
+    clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    get16BitPcm(sample) {
+        return sample < 0 
+            ? sample * 0x8000
+            : sample * 0x7FFF;
+    }
+    
     write16BitPcm(inputs) {
-        return inputs.map(inputSample => {            
+        
+        inputs.forEach(function(inputSample, index) {
             var outputSample = Math.max(-1, Math.min(1, inputSample));
             let pcmValue = outputSample < 0 
-                ? outputSample * 0x8000 
+                ? outputSample * 0x8000
                 : outputSample * 0x7FFF;
-            return pcmValue;
-        })
+            this._view.setInt16(index, pcmValue, true);
+        }.bind(this));
+        return this._view.buffer;
     }
 
     writeMono(inputs) {

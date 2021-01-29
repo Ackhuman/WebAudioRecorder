@@ -123,7 +123,9 @@
     }
 
     function downloadRecording(userFileName) {
-        NeighborScience.Service.Storage.DownloadData(userFileName);
+        if(!streamToDisk) {
+            NeighborScience.Service.Storage.DownloadData(userFileName);
+        }
         recorderNode.port.postMessage({ eventType: 'finish' });
         inputSource = null;
         audioStream.getTracks().forEach(track => track.stop());
@@ -181,56 +183,6 @@
         return fileStream;
         
     }
-    async function initFileWriter() {
-        let mimeType = NeighborScience.Service.Device.GetAudioMimeType();
-        let fileExtension = NeighborScience.Service.Device.GetAudioFileExtension();
-        let acceptConfig = Object.defineProperty({}, mimeType, { get: () => [fileExtension] });
-        const options = {
-            types: [
-                {
-                    description: 'Audio Files',
-                    accept: acceptConfig
-                },
-            ],
-        };
-        const handle = await window.showSaveFilePicker(options);
-        const fileStream = await handle.createWritable();        
-        let writer = fileStream.getWriter();
-        return writer.ready
-            .then(function() {
-                //seek to byte 44 where the actual data starts. we will write the header afterward.
-                return writer.write({ type: 'seek', position: 44 });
-            }).then(function() {                
-                return writer;
-            });
-        
-    }
-
-    async function createStream(port) {
-        let audioStream = processorToReadableStream(port);
-        let fileStream = await initFileStream();
-        return { audioStream, fileStream };
-    }
-    
-    async function writeAudioToFile(audioStream, fileWriter) {
-        //todo: finish with file headers
-        let audioReader = audioStream.getReader();
-        function stream() {
-            audioReader.read()
-                .then(
-                    function({done, value}) { 
-                        if(done) {
-                            return writeHeadersToFile(fileWriter);
-                        } else {
-                            return fileWriter.write({ type: 'write', data: value })
-                                .then(stream);
-                        }
-                    }, 
-                    onError
-                );
-        }
-        stream();
-    }
     function streamAudioToFile(audioStream, fileStream) {
         //todo: finish with file headers
         //note: pipeTo is only supported in Chrome.
@@ -254,10 +206,6 @@
     function onError(err) {
         console.log(err.message);
     }
-    function writeHeadersToFile(fileStream) {
-
-        return fileStream.close();
-    }
 
     function processorToReadableStream(port) {
         return new ReadableStream({
@@ -280,26 +228,21 @@
     }
 
     function fileWritableStreamToWritableStream(fileStream, headerWriteMethod, headerLengthBytes) {
-        const queuingStrategy = new CountQueuingStrategy({ highWaterMark: 1 });
-        //let writer = fileStream.getWriter();
-        let writer = fileStream;
         let bytesWritten = 0;
         const writableStream = new WritableStream({
             // Implement the sink
             async start(controller) {
                 if(headerLengthBytes) {
-                    // let headerBuffer = new ArrayBuffer(headerLengthBytes);
-                    // let view = new DataView(headerBuffer);
-                    // let headerBytes = headerWriteMethod(view, bytesWritten);
-                    //return writer.write({ type: 'write', data: headerBytes })
-                    await writer.truncate(headerLengthBytes + 1000);
-                    return writer.seek(headerLengthBytes);
-                    //return writer.write({ type: 'seek', position: headerLengthBytes });
+                    //Currently it's not possible to seek past the end of a file.
+                    //So first, we need to "truncate" which really just means to resize it.
+                    //May as well add some extre room since we're going to be filling it anyway.
+                    await fileStream.truncate(headerLengthBytes + 50000);
+                    return fileStream.seek(headerLengthBytes);
                 }
             },
             async write(chunk) {
-                bytesWritten += chunk.length;
-                return writer.write({ type: 'write', data: chunk });
+                bytesWritten += chunk.byteLength;
+                return fileStream.write({ type: 'write', data: chunk });
             },
             async close() {
                 let promise = Promise.resolve();
@@ -307,11 +250,11 @@
                     let headerBuffer = new ArrayBuffer(headerLengthBytes);
                     let view = new DataView(headerBuffer);
                     let headerBytes = headerWriteMethod(view, bytesWritten);
-                    //promise = writer.write({ type: 'write', data: headerBytes, position: 0 })
-                    promise = writer.seek(0)
-                        .then(() => writer.write({type: 'write', data: headerBytes.buffer }));
+                    //Seek back to the beginning of the file and write the header using the size counted.
+                    promise = fileStream.seek(0)
+                        .then(() => fileStream.write({type: 'write', data: headerBytes.buffer }));
                 }
-                return promise.then(() => writer.close());
+                return promise.then(() => fileStream.close());
             },
             abort(err) {
                 console.log("Sink error:", err);
