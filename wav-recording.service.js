@@ -167,9 +167,9 @@
         }
     }
     async function initFileStream() {
-        let mimeType = NeighborScience.Service.Device.GetAudioMimeType();
         let fileExtension = NeighborScience.Service.Device.GetAudioFileExtension();
-        let acceptConfig = Object.defineProperty({}, mimeType, { get: () => [fileExtension] });
+        //let acceptConfig = Object.defineProperty({}, mimeType, { value: [`.${fileExtension}`] });
+        let acceptConfig = { 'audio/*': [`.${fileExtension}`] };
         const options = {
             types: [
                 {
@@ -177,6 +177,7 @@
                     accept: acceptConfig
                 },
             ],
+            multiple: false
         };
         const handle = await window.showSaveFilePicker(options);
         const fileStream = await handle.createWritable();        
