@@ -13,15 +13,23 @@
     function deviceService() {
         return {
             SetRecordingMethod: setRecordingMethod,
+            GetRecordingMethod: getRecordingMethod,
             GetMediaRecorder: getMediaRecorder,
             GetMediaStream: getMediaStream,
             GetAvailableDevices: getAvailableDevices,
-            GetAudioMimeType: getAudioMimeType
+            GetAudioMimeType: getAudioMimeType,
+            GetAudioFileExtension: getAudioFileExtension
         }
     }
 
     function setRecordingMethod(method) {        
         recordingMethod = method;
+    }
+
+    function getRecordingMethod() {        
+        let selRecordingMethod = document.getElementById('selRecordingMethod');
+        return recordingMethod = selRecordingMethod
+            .options[selRecordingMethod.selectedIndex].value;
     }
 
     function getAvailableDevices() {
@@ -53,6 +61,21 @@
             throw new Error("Codecs not supported");
         }
     }
+
+    function getAudioFileExtension(){
+        let mimeType = getAudioMimeType();
+        switch(mimeType) {
+            case 'audio/wav':
+                return 'wav';
+            case 'audio/ogg':
+                return 'ogg';
+            case 'audio/webm':
+                return 'weba';
+            default:
+                return '';
+        }
+    }
+
     //Gets the MIME type of the audio codec
     function getAudioCodec() {
         let oggType = 'audio/ogg;codecs=opus';

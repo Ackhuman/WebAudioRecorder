@@ -32,7 +32,6 @@
             .forEach(name => elements[name] = document.getElementById(name));
         initSoundSourceSelector();
         window.addEventListener('recordingstatechanged', evt => onRecordingStateChanged(evt.detail.oldState, evt.detail.newState));
-        NeighborScience.Controller.Visualizer.Init();
     }
 
     function initSoundSourceSelector() {        
@@ -44,23 +43,49 @@
                 } else {
                     document.getElementById('selSoundSource').style.display = 'none';
                 }
-            }).then(optionsHtml => void 0
-                //document.getElementById('selSoundSource').innerHTML = optionsHtml
-            );
+            })
+            // .then(optionsHtml => void 0
+            //     document.getElementById('selSoundSource').innerHTML = optionsHtml
+            // );
     }
 
     function onStartClicked() {
-        let recordingMethod = elements.selRecordingMethod
-            .options[elements.selRecordingMethod.selectedIndex].value;
-        //set the correct recording service
-        let useWavRecording = recordingMethod == "lossless";
-        NeighborScience.Service.Device.SetRecordingMethod(recordingMethod);
-        recordingService = useWavRecording 
-            ? NeighborScience.Service.WavRecording
-            : NeighborScience.Service.Recording;
-        recordingService.Start();
-        let analyzer = recordingService.GetAnalyzer();
-        NeighborScience.Controller.Visualizer.Start(analyzer);
+        let saveOrDumpDialogConfig = {
+            title: 'Dump current audio?',
+            text: 'Do you want to add to the current recording, or dump the recording and start a fresh one?',
+            choices: [
+                {
+                    text: 'Add',
+                    cssClass: 'btn btn-primary',
+                    reject: false,
+                    value: true
+                },
+                {
+                    text: 'Dump',
+                    cssClass: 'btn btn-danger',
+                    reject: false,
+                    value: false
+                }
+            ]
+        };
+        let proceedPromise = NeighborScience.Service.Storage.HasAudio()
+            ? NeighborScience.Dialog.Prompt(saveOrDumpDialogConfig)
+            : Promise.resolve(false);
+        proceedPromise
+            .then(function(dump) { 
+                if(dump) {
+                    NeighborScience.Service.Storage.DumpData();
+                }
+                let recordingMethod = NeighborScience.Service.Device.GetRecordingMethod();
+                //set the correct recording service
+                let useWavRecording = recordingMethod == "lossless";
+                NeighborScience.Service.Device.SetRecordingMethod(recordingMethod);
+                recordingService = useWavRecording 
+                    ? NeighborScience.Service.WavRecording
+                    : NeighborScience.Service.Recording;
+                recordingService.Start();
+            });
+        
     }
 
     function onPauseClicked() {
@@ -69,7 +94,6 @@
 
     function onStopClicked() {
         recordingService.Stop();
-        NeighborScience.Controller.Visualizer.Reset();
     }
 
     function onDownloadClicked() {
@@ -92,10 +116,12 @@
                 }
             ]
         };
-        NeighborScience.Dialog.Prompt(fileNameDialogConfig)
-            .then(({fileName}) => 
+        let fileName = '';
+        //temporarily commented out
+        //NeighborScience.Dialog.Prompt(fileNameDialogConfig)
+        //    .then(({fileName}) => 
                 recordingService.Download(fileName)
-            );
+        //    );
     }
 
     function onDumpClicked() {

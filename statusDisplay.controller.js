@@ -25,6 +25,7 @@
         Object.getOwnPropertyNames(elements)
             .forEach(name => elements[name] = document.getElementById(name));
         window.addEventListener('recordingstatechanged', evt => updateRecordingState(evt.detail.newState));
+        NeighborScience.Controller.Visualizer.Init();
     }
 
     function updateRecordingState(newState) {
@@ -32,6 +33,7 @@
             case recordingStates.notStarted:
             case recordingStates.saved:
                 resetTimeDisplay();
+                NeighborScience.Controller.Visualizer.Reset();
                 break;
             case recordingStates.stopped:
             case recordingStates.paused:
@@ -39,6 +41,7 @@
                 break;
             case recordingStates.started:
                 startRecordedTimeDisplay();
+                NeighborScience.Controller.Visualizer.Start();
                 break;
         }
         elements.lblStatusDisplay.innerText = newState;
@@ -62,6 +65,7 @@
     function stopRecordedTimeDisplay() {
         clearInterval(recordedTimeInterval);
         recordedTimeInterval = null;
+        recordedTimeDurationSeconds = 0;
         if(!pausedTimeInterval){
             pausedTimeInterval = setInterval(function() {
                 elements.lblTimeDisplay.classList.toggle('blink');

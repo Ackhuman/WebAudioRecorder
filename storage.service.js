@@ -13,9 +13,12 @@
         return {
             InitLossy: initLossy,
             InitLossless: initLossless,
+            InitFileStream: initFileStream,
+            HasAudio: () => audioChunks.length > 0,
             DownloadData: downloadData,
             DumpData: dumpData,
-            DataAvailable: onDataAvailable
+            DataAvailable: onDataAvailable,
+            WriteWavHeader: writeWavHeader
         }
     }
 
@@ -28,10 +31,12 @@
     var audioContext = null;
     var numChannels = null;
     var processOffline = true;
-    function initLossless(_audioContext, _numChannels, _processOffline) {
+    var streamToDisk = true;
+    function initLossless(_audioContext, _numChannels, _processOffline, _streamToDisk) {
         audioContext = _audioContext;
         numChannels = _numChannels;
         processOffline = _processOffline;
+        streamToDisk = _streamToDisk;
     }
 
     function downloadData(userFileName) {
@@ -49,8 +54,21 @@
         audioChunks.splice(0, audioChunks.length);
     }
 
-    function backupData() {
-
+    async function initFileStream() {
+        let mimeType = NeighborScience.Service.Device.GetAudioMimeType();
+        let fileExtension = NeighborScience.Service.Device.GetAudioFileExtension();
+        let acceptConfig = Object.defineProperty({}, mimeType, { get: () => [fileExtension] });
+        const options = {
+            types: [
+                {
+                    description: 'Audio Files',
+                    accept: acceptConfig
+                },
+            ],
+        };
+        const handle = await window.showSaveFilePicker(options);
+        const writable = await handle.createWritable();
+        return writable;
     }
 
     function onDataAvailable(event) {
@@ -68,12 +86,21 @@
     
     function encodeWav(samples){
         var buffer = new ArrayBuffer(44 + samples.length * 2);
-        var view = new DataView(buffer);
-    
+        var view = new DataView(buffer);    
+        writeWavHeader(view, samples.length);        
+        if (processOffline) {
+            floatTo16BitPCM(view, 44, samples);    
+        } else {
+            writePCMValues(view, 44, samples);
+        }
+        return view;
+    }
+
+    function writeWavHeader(view, fileLength) {
         /* RIFF identifier */
         writeString(view, 0, 'RIFF');
         /* file length */
-        view.setUint32(4, 36 + samples.length * 2, true);
+        view.setUint32(4, 36 + fileLength * 2, true);
         /* RIFF type */
         writeString(view, 8, 'WAVE');
         /* format chunk identifier */
@@ -95,13 +122,7 @@
         /* data chunk identifier */
         writeString(view, 36, 'data');
         /* data chunk length */
-        view.setUint32(40, samples.length * 2, true);
-        
-        if (processOffline) {
-            floatTo16BitPCM(view, 44, samples);    
-        } else {
-            writePCMValues(view, 44, samples);
-        }
+        view.setUint32(40, fileLength * 2, true);
         return view;
     }
 
