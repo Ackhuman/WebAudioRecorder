@@ -1,12 +1,12 @@
 (function() {
-    if (typeof(NeighborScience) === "undefined") {
-        NeighborScience = {};
+    if (typeof(WebSound) === "undefined") {
+        WebSound = {};
     }
-    if (typeof(NeighborScience.Controller) === "undefined") {
-        NeighborScience.Controller = {}; 
+    if (typeof(WebSound.Controller) === "undefined") {
+        WebSound.Controller = {}; 
     }
 
-    NeighborScience.Controller.RecordingControls = {
+    WebSound.Controller.RecordingControls = {
         Init: init,
         OnStartClicked: onStartClicked,
         OnPauseClicked: onPauseClicked,
@@ -24,7 +24,7 @@
         selRecordingMethod: null,
         lblTimeDisplay: null
     };
-    const recordingStates = NeighborScience.Service.Recording.RecordingStates;
+    const recordingStates = WebSound.Service.Recording.RecordingStates;
     var recordingService = null;
 
     function init() {
@@ -35,7 +35,7 @@
     }
 
     function initSoundSourceSelector() {        
-        NeighborScience.Service.Device.GetAvailableDevices()
+        WebSound.Service.Device.GetAvailableDevices()
             .then(devices => {
                 let audioDevices = devices.filter(device => device.kind === "audioinput");
                 if(audioDevices.length > 1) {
@@ -68,21 +68,21 @@
                 }
             ]
         };
-        let proceedPromise = NeighborScience.Service.Storage.HasAudio()
-            ? NeighborScience.Dialog.Prompt(saveOrDumpDialogConfig)
+        let proceedPromise = WebSound.Service.Storage.HasAudio()
+            ? WebSound.Dialog.Prompt(saveOrDumpDialogConfig)
             : Promise.resolve(false);
         proceedPromise
             .then(function(dump) { 
                 if(dump) {
-                    NeighborScience.Service.Storage.DumpData();
+                    WebSound.Service.Storage.DumpData();
                 }
-                let recordingMethod = NeighborScience.Service.Device.GetRecordingMethod();
+                let recordingMethod = WebSound.Service.Device.GetRecordingMethod();
                 //set the correct recording service
                 let useWavRecording = recordingMethod == "lossless";
-                NeighborScience.Service.Device.SetRecordingMethod(recordingMethod);
+                WebSound.Service.Device.SetRecordingMethod(recordingMethod);
                 recordingService = useWavRecording 
-                    ? NeighborScience.Service.WavRecording
-                    : NeighborScience.Service.Recording;
+                    ? WebSound.Service.WavRecording
+                    : WebSound.Service.Recording;
                 recordingService.Start();
             });
         
@@ -118,14 +118,14 @@
         };
         let fileName = '';
         //temporarily commented out
-        //NeighborScience.Dialog.Prompt(fileNameDialogConfig)
+        //WebSound.Dialog.Prompt(fileNameDialogConfig)
         //    .then(({fileName}) => 
                 recordingService.Download(fileName)
         //    );
     }
 
     function onDumpClicked() {
-        NeighborScience.Dialog.Prompt({
+        WebSound.Dialog.Prompt({
             text: 'This will delete all of the audio you\'ve recorded. This cannot be undone.'
         }).then(() => {
             recordingService.DumpData();

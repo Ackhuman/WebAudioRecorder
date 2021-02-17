@@ -1,12 +1,12 @@
 (function() {    
-    if (typeof(NeighborScience) === "undefined") {
-        NeighborScience = {};
+    if (typeof(WebSound) === "undefined") {
+        WebSound = {};
     }
-    if (typeof(NeighborScience.Service) === "undefined") {
-        NeighborScience.Service = {}; 
+    if (typeof(WebSound.Service) === "undefined") {
+        WebSound.Service = {}; 
     }
 
-    NeighborScience.Service.Device = deviceService();
+    WebSound.Service.Device = deviceService();
     
     var recordingMethod = "lossless";
 

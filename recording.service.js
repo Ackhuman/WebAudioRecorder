@@ -1,10 +1,10 @@
 (function() {
     
-    if (typeof(NeighborScience) === "undefined") {
-        NeighborScience = {};
+    if (typeof(WebSound) === "undefined") {
+        WebSound = {};
     }
-    if (typeof(NeighborScience.Service) === "undefined") {
-        NeighborScience.Service = {}; 
+    if (typeof(WebSound.Service) === "undefined") {
+        WebSound.Service = {}; 
     }
 
     const recordingStates = {
@@ -15,7 +15,7 @@
         saved: 'Saved'
     }
 
-    NeighborScience.Service.Recording = recordingService();
+    WebSound.Service.Recording = recordingService();
 
     var recorderState = recordingStates.notStarted;
     var mediaRecorder = null;
@@ -55,14 +55,14 @@
 
     function init() { 
         const audioContext = new AudioContext(contextOptions);
-        return NeighborScience.Service.Device.GetMediaStream()
+        return WebSound.Service.Device.GetMediaStream()
             .then(stream => {            
-                let options = { mimeType: NeighborScience.Service.Device.GetAudioCodec() };
+                let options = { mimeType: WebSound.Service.Device.GetAudioCodec() };
                 inputSource = audioContext.createMediaStreamSource(stream);
                 analyzer = audioContext.createAnalyser();
                 inputSource.connect(analyzer);
                 mediaRecorder = new MediaRecorder(stream, options);;
-                NeighborScience.Service.Storage.InitLossy(recorder);
+                WebSound.Service.Storage.InitLossy(recorder);
             });
     }
 
@@ -96,13 +96,13 @@
 
     function download(userFileName) {
         updateRecordingState(recordingStates.saved);
-        NeighborScience.Service.Storage.DownloadData(userFileName);
+        WebSound.Service.Storage.DownloadData(userFileName);
         setTimeout(() => updateRecordingState(recordingStates.notStarted), 5000);
         return Promise.resolve(recordingStates.saved);
     }
 
     function dumpData() {
-        NeighborScience.Service.Storage.DumpData();
+        WebSound.Service.Storage.DumpData();
         updateRecordingState(recordingStates.notStarted);
     }
 

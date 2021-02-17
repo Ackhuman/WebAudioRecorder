@@ -1,8 +1,8 @@
 (function() {
-    if (typeof(NeighborScience) === "undefined") {
-        NeighborScience = {};
+    if (typeof(WebSound) === "undefined") {
+        WebSound = {};
     }
-    NeighborScience.Dialog = {
+    WebSound.Dialog = {
         Init: init,
         Prompt: prompt
     }; 

@@ -1,13 +1,13 @@
 (function() {
     
-    if (typeof(NeighborScience) === "undefined") {
-        NeighborScience = {};
+    if (typeof(WebSound) === "undefined") {
+        WebSound = {};
     }
-    if (typeof(NeighborScience.Controller) === "undefined") {
-        NeighborScience.Controller = {}; 
+    if (typeof(WebSound.Controller) === "undefined") {
+        WebSound.Controller = {}; 
     }
 
-    NeighborScience.Controller.Visualizer = {
+    WebSound.Controller.Visualizer = {
         Init: init,
         Start: start,
         Reset: reset
@@ -32,12 +32,12 @@
     }
 
     function start() {
-        let recordingMethod = NeighborScience.Service.Device.GetRecordingMethod();
+        let recordingMethod = WebSound.Service.Device.GetRecordingMethod();
         //set the correct recording service
         let useWavRecording = recordingMethod == "lossless";
         recordingService = useWavRecording 
-            ? NeighborScience.Service.WavRecording
-            : NeighborScience.Service.Recording;
+            ? WebSound.Service.WavRecording
+            : WebSound.Service.Recording;
         analyzer = recordingService.GetAnalyzer();
         visualize();
     }

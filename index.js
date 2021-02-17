@@ -1,13 +1,13 @@
 (function() {
 
-    if (typeof(NeighborScience) === "undefined") {
-        NeighborScience = {};
+    if (typeof(WebSound) === "undefined") {
+        WebSound = {};
     }
-    if (typeof(NeighborScience.Controller) === "undefined") {
-        NeighborScience.Controller = {}; 
+    if (typeof(WebSound.Controller) === "undefined") {
+        WebSound.Controller = {}; 
     }
 
-    NeighborScience.Controller.Main = {
+    WebSound.Controller.Main = {
         Init: init
     };
 
@@ -15,7 +15,7 @@
         insertTemplate('tplControls', 'containerControls');
         insertTemplate('tplDisplay', 'displayContainer');
         insertTemplate('tplIntroText', 'introTextContainer');
-        Object.assign(NeighborScience.Controller.Main, NeighborScience.Controller.Recording);
+        Object.assign(WebSound.Controller.Main, WebSound.Controller.Recording);
     }
     
 

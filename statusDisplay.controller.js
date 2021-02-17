@@ -1,12 +1,12 @@
 (function() {
-    if (typeof(NeighborScience) === "undefined") {
-        NeighborScience = {};
+    if (typeof(WebSound) === "undefined") {
+        WebSound = {};
     }
-    if (typeof(NeighborScience.Controller) === "undefined") {
-        NeighborScience.Controller = {}; 
+    if (typeof(WebSound.Controller) === "undefined") {
+        WebSound.Controller = {}; 
     }
 
-    NeighborScience.Controller.StatusDisplay = {
+    WebSound.Controller.StatusDisplay = {
         Init: init,
         StartCounter: startRecordedTimeDisplay,
         StopCounter: stopRecordedTimeDisplay,
@@ -19,13 +19,13 @@
         lblStatusDisplay: null
     };
 
-    const recordingStates = NeighborScience.Service.Recording.RecordingStates;
+    const recordingStates = WebSound.Service.Recording.RecordingStates;
 
     function init() {
         Object.getOwnPropertyNames(elements)
             .forEach(name => elements[name] = document.getElementById(name));
         window.addEventListener('recordingstatechanged', evt => updateRecordingState(evt.detail.newState));
-        NeighborScience.Controller.Visualizer.Init();
+        WebSound.Controller.Visualizer.Init();
     }
 
     function updateRecordingState(newState) {
@@ -33,7 +33,7 @@
             case recordingStates.notStarted:
             case recordingStates.saved:
                 resetTimeDisplay();
-                NeighborScience.Controller.Visualizer.Reset();
+                WebSound.Controller.Visualizer.Reset();
                 break;
             case recordingStates.stopped:
             case recordingStates.paused:
@@ -41,7 +41,7 @@
                 break;
             case recordingStates.started:
                 startRecordedTimeDisplay();
-                NeighborScience.Controller.Visualizer.Start();
+                WebSound.Controller.Visualizer.Start();
                 break;
         }
         elements.lblStatusDisplay.innerText = newState;

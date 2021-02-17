@@ -1,13 +1,13 @@
 (function() {
     
-    if (typeof(NeighborScience) === "undefined") {
-        NeighborScience = {};
+    if (typeof(WebSound) === "undefined") {
+        WebSound = {};
     }
-    if (typeof(NeighborScience.Service) === "undefined") {
-        NeighborScience.Service = {}; 
+    if (typeof(WebSound.Service) === "undefined") {
+        WebSound.Service = {}; 
     }
 
-    NeighborScience.Service.WavRecording = wavRecordingService();
+    WebSound.Service.WavRecording = wavRecordingService();
 
     const recordingStates = {
         notStarted: 'Not Started',
@@ -54,7 +54,7 @@
             .then(() => {
                 let dest = inputSource.connect(analyzer)
                     .connect(recorderNode);
-                return NeighborScience.Service.Storage.InitLossless(audioContext, 1, processOnline, streamToDisk);
+                return WebSound.Service.Storage.InitLossless(audioContext, 1, processOnline, streamToDisk);
             });
     }
 
@@ -63,7 +63,7 @@
     }
 
     function createSourceWorklet() { 
-        return NeighborScience.Service.Device.GetMediaStream()
+        return WebSound.Service.Device.GetMediaStream()
             .then(function(stream) {
                 audioStream = stream;
                 inputSource = audioContext.createMediaStreamSource(stream);
@@ -73,7 +73,7 @@
     function createRecorderWorklet() {
         return audioContext.audioWorklet.addModule('wav-processor.js')
             .then(function() {
-                recorderNode = new AudioWorkletNode(audioContext, 'wav-processor');
+                recorderNode = new AudioWorkletNode(audioContext, 'wav-processor', { channelCount: 1 });
                 if (processOnline) {
                     recorderNode.port.postMessage({ eventType: 'processOnline' });
                 }
@@ -124,7 +124,7 @@
 
     function downloadRecording(userFileName) {
         if(!streamToDisk) {
-            NeighborScience.Service.Storage.DownloadData(userFileName);
+            WebSound.Service.Storage.DownloadData(userFileName);
         }
         recorderNode.port.postMessage({ eventType: 'finish' });
         inputSource = null;
@@ -133,7 +133,7 @@
     }
 
     function dumpData() {
-        NeighborScience.Service.Storage.DumpData();
+        WebSound.Service.Storage.DumpData();
         recorderNode.port.postMessage({ eventType: 'finish' });
         inputSource = null;
         audioStream.getTracks().forEach(track => track.stop());
@@ -162,12 +162,12 @@
         switch(evt.data.eventType){
             case 'dataavailable':
                 const audioData = evt.data.audioBuffer;
-                NeighborScience.Service.Storage.DataAvailable(audioData);
+                WebSound.Service.Storage.DataAvailable(audioData);
                 break;
         }
     }
     async function initFileStream() {
-        let fileExtension = NeighborScience.Service.Device.GetAudioFileExtension();
+        let fileExtension = WebSound.Service.Device.GetAudioFileExtension();
         //let acceptConfig = Object.defineProperty({}, mimeType, { value: [`.${fileExtension}`] });
         let acceptConfig = { 'audio/*': [`.${fileExtension}`] };
         const options = {
@@ -187,7 +187,7 @@
     function streamAudioToFile(audioStream, fileStream) {
         //todo: finish with file headers
         //note: pipeTo is only supported in Chrome.
-        let headerWriteMethod = NeighborScience.Service.Storage.WriteWavHeader;
+        let headerWriteMethod = WebSound.Service.Storage.WriteWavHeader;
         let headerLengthBytes = 44;
         let writableFileStream = fileWritableStreamToWritableStream(fileStream, headerWriteMethod, headerLengthBytes);
         return audioStream.pipeTo(writableFileStream);
@@ -264,7 +264,7 @@
         let errTime = new Date().toString();
         let msg = `${errTime} \t Error in ${err.stack} \t ${err.name} \t ${err.message}`;
         saveAs(msg, `error-${errTime}.debug.txt`);
-        NeighborScience.Service.Storage.DownloadData(`current-recorded-data-${errTime}`);
+        WebSound.Service.Storage.DownloadData(`current-recorded-data-${errTime}`);
     }
 
 })();

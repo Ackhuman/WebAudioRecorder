@@ -1,13 +1,13 @@
 (function() {
     
-    if (typeof(NeighborScience) === "undefined") {
-        NeighborScience = {};
+    if (typeof(WebSound) === "undefined") {
+        WebSound = {};
     }
-    if (typeof(NeighborScience.Service) === "undefined") {
-        NeighborScience.Service = {}; 
+    if (typeof(WebSound.Service) === "undefined") {
+        WebSound.Service = {}; 
     }
 
-    NeighborScience.Service.Storage = storageService();
+    WebSound.Service.Storage = storageService();
 
     function storageService() {
         return {
@@ -41,7 +41,7 @@
 
     function downloadData(userFileName) {
         let fileName = userFileName || new Date().toDateString();
-        let mimeType = NeighborScience.Service.Device.GetAudioMimeType();
+        let mimeType = WebSound.Service.Device.GetAudioMimeType();
         let blobData = audioChunks
         if (mimeType === "audio/wav"){
             blobData = [encodeWav(audioChunks)];
@@ -55,8 +55,8 @@
     }
 
     async function initFileStream() {
-        let mimeType = NeighborScience.Service.Device.GetAudioMimeType();
-        let fileExtension = NeighborScience.Service.Device.GetAudioFileExtension();
+        let mimeType = WebSound.Service.Device.GetAudioMimeType();
+        let fileExtension = WebSound.Service.Device.GetAudioFileExtension();
         let acceptConfig = Object.defineProperty({}, mimeType, { get: () => [fileExtension] });
         const options = {
             types: [
