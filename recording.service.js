@@ -28,8 +28,6 @@
             Start: start,
             Stop: stop,
             PauseOrResume: pauseOrResume,
-            Download: download,
-            DumpData: dumpData,
             RecordingStates: recordingStates,
             GetAnalyzer: getAnalyzer
         }
@@ -82,6 +80,8 @@
     function stop() {
         updateRecordingState(recordingStates.stopped);
         mediaRecorder.stop();
+        updateRecordingState(recordingStates.saved);
+        setTimeout(() => updateRecordingState(recordingStates.notStarted), 5000);
     }
 
     function pauseOrResume() {
@@ -92,18 +92,6 @@
             updateRecordingState(recordingStates.paused);
             mediaRecorder.pause();
         }
-    }
-
-    function download(userFileName) {
-        updateRecordingState(recordingStates.saved);
-        WebSound.Service.Storage.DownloadData(userFileName);
-        setTimeout(() => updateRecordingState(recordingStates.notStarted), 5000);
-        return Promise.resolve(recordingStates.saved);
-    }
-
-    function dumpData() {
-        WebSound.Service.Storage.DumpData();
-        updateRecordingState(recordingStates.notStarted);
     }
 
     function getRecorderState() { 

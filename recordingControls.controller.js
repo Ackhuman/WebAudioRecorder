@@ -10,16 +10,12 @@
         Init: init,
         OnStartClicked: onStartClicked,
         OnPauseClicked: onPauseClicked,
-        OnStopClicked: onStopClicked,
-        OnDownloadClicked: onDownloadClicked,
-        OnDumpClicked: onDumpClicked
+        OnStopClicked: onStopClicked
     }
     const elements = {
         btnPause: null,
         btnStart: null,
         btnStop: null,
-        btnDownload: null,
-        btnDump: null,
         selSources: null,
         selRecordingMethod: null,
         lblTimeDisplay: null
@@ -43,10 +39,7 @@
                 } else {
                     document.getElementById('selSoundSource').style.display = 'none';
                 }
-            })
-            // .then(optionsHtml => void 0
-            //     document.getElementById('selSoundSource').innerHTML = optionsHtml
-            // );
+            });
     }
 
     function onStartClicked() {
@@ -97,39 +90,28 @@
     }
 
     function onDownloadClicked() {
-        let fileNameDialogConfig = {
-            title: 'Save Audio',
-            height: 240,
-            text: 'If you want, enter a name for the file. The best practice would be to use your name and some description of what you\'re talking about.',
-            valueInputs: [
-                {
-                    type: 'text',
-                    placeholder: 'Enter a file name (optional)',
-                    name: 'fileName'
-                }
-            ],
-            choices: [
-                {
-                    text: 'Save',
-                    cssClass: 'btn btn-primary',
-                    reject: false
-                }
-            ]
-        };
+        // let fileNameDialogConfig = {
+        //     title: 'Save Audio',
+        //     height: 240,
+        //     text: 'If you want, enter a name for the file. The best practice would be to use your name and some description of what you\'re talking about.',
+        //     valueInputs: [
+        //         {
+        //             type: 'text',
+        //             placeholder: 'Enter a file name (optional)',
+        //             name: 'fileName'
+        //         }
+        //     ],
+        //     choices: [
+        //         {
+        //             text: 'Save',
+        //             cssClass: 'btn btn-primary',
+        //             reject: false
+        //         }
+        //     ]
+        // };
         let fileName = '';
         //temporarily commented out
-        //WebSound.Dialog.Prompt(fileNameDialogConfig)
-        //    .then(({fileName}) => 
-                recordingService.Download(fileName)
-        //    );
-    }
-
-    function onDumpClicked() {
-        WebSound.Dialog.Prompt({
-            text: 'This will delete all of the audio you\'ve recorded. This cannot be undone.'
-        }).then(() => {
-            recordingService.DumpData();
-        }, () => {});        
+        recordingService.Download(fileName);
     }
 
     function createDeviceOptionHtml(devices) {
@@ -183,8 +165,8 @@
         elements.btnStart.disabled = btnStartDisabled;
         elements.btnStop.disabled = btnStopDisabled;
         elements.btnPause.disabled = btnPauseDisabled;
-        elements.btnDownload.disabled = btnDownloadDisabled;
-        elements.btnDump.disabled = btnDumpDisabled;
+        // elements.btnDownload.disabled = btnDownloadDisabled;
+        // elements.btnDump.disabled = btnDumpDisabled;
         //selSoundSource.disabled = selSoundSourceDisabled;
     }
 

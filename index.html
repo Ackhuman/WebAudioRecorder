@@ -108,22 +108,14 @@
             title="Stop Recording">
             <i class="fa fa-stop"></i>
         </button>
-        <button id="btnDownload"
+        <button id="btnStop"
             type="button" 
             class="btn btn-link"
             disabled="disabled"
-            onclick="WebSound.Controller.RecordingControls.OnDownloadClicked()"
-            title="Download Audio">
-            <i class="fa fa-download"></i>
-        </button>
-        <button id="btnDump"
-            type="button" 
-            class="btn btn-link"
-            disabled="disabled"
-            onclick="WebSound.Controller.RecordingControls.OnDumpClicked()"
-            title="Dump Audio and Restart">
-            <i class="fa fa-trash text-danger"></i>
-        </button>
+            onclick="WebSound.Controller.RecordingControls.OnSetupClicked()"
+            title="Click this button to enter a guided sound check, which will attempt to produce optimal audio levels.">
+            <i class="fa fa-sliders-h"></i>
+        </button>        
     </script>
 
     <script type="text/template" id="tplFileNameModal">

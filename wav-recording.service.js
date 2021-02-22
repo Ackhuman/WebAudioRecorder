@@ -79,6 +79,14 @@
                 }
             });
     }
+    var defaultCompressorSettings = 'threshold -10 noise -40 ratio 2.5 attack 0.1 release 1.0 knee 1.0';
+    function createCompressorWorklet() {
+        return audioContext.audioWorklet.addModule('compressor.js')
+            .then(function() {
+                recorderNode = new AudioWorkletNode(audioContext, 'compressor', { channelCount: 1 });
+                recorderNode.port.postMessage({ eventType: defaultCompressorSettings });
+            });
+    }
 
     function createAnalyzerNode() {        
         let analyzer = audioContext.createAnalyser();
