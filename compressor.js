@@ -39,10 +39,7 @@ class Compressor extends AudioWorkletProcessor {
     }
 
     process (inputs, outputs, parameters) {
-        if (!this.isRecording && !this.isSampling) {
-            return false;
-        }
-        compress(inputs, outputs);
+        this.compress(inputs, outputs);
         return true;
     }
     //main loop for compressor
@@ -51,7 +48,7 @@ class Compressor extends AudioWorkletProcessor {
         let outputStream = outputs[0];
         let channelIndex = 0;
         while(channelIndex < inputStream.length) {
-            this.shouldCompressSample(inputStream, outputStream, channelIndex);
+            this.handleChannel(inputStream, outputStream, channelIndex);
             channelIndex++;
         }
     }
@@ -62,6 +59,7 @@ class Compressor extends AudioWorkletProcessor {
         let outputChannel = outputStream[channelIndex];
         //loop through the channel's samples and compress if we should do that
         while(sampleIndex < inputChannel.length){
+            let sample = inputChannel[sampleIndex];
             let shouldCompress = this.shouldCompressSample(sample);
             if(shouldCompress){
                 sample = this.getCompressedSample(sample);

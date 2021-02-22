@@ -48,11 +48,13 @@
         audioContext = new AudioContext(contextOptions);
         let sourceWorkletPromise = createSourceWorklet();
         let recorderWorkletPromise = createRecorderWorklet();
+        let compressorWorkletPromise = createCompressorWorklet();
         audioContext.createBufferSource();
         analyzer = createAnalyzerNode();
-        return Promise.all([sourceWorkletPromise, recorderWorkletPromise])
-            .then(() => {
-                let dest = inputSource.connect(analyzer)
+        return Promise.all([sourceWorkletPromise, compressorWorkletPromise, recorderWorkletPromise])
+            .then(([src, compressorNode, recorder]) => {
+                //let dest = createAudioNetwork(analyzer, compressorNode, recorderNode);
+                let dest = analyzer.connect(compressorNode)
                     .connect(recorderNode);
                 return WebSound.Service.Storage.InitLossless(audioContext, 1, processOnline, streamToDisk);
             });
@@ -77,14 +79,32 @@
                 if (processOnline) {
                     recorderNode.port.postMessage({ eventType: 'processOnline' });
                 }
+                return recorderNode;
             });
     }
-    var defaultCompressorSettings = 'threshold -10 noise -40 ratio 2.5 attack 0.1 release 1.0 knee 1.0';
+
+    function createAudioNetwork(...nodes) {
+        return nodes.reduce((network, node) => network.connect(node));
+    }
+
+    var defaultCompressorSettings = {
+        noiseFloorDB: -40,
+        thresholdDB: -10,
+        ratioToOne: 2.5,
+        attackTimeSecs: 0.2,
+        releaseTimeSecs: 1,
+        knee0to1: 0.0,
+        compressFromPeak: false,
+        amplifyToMax: false,
+        peakDB: -1
+    };
     function createCompressorWorklet() {
         return audioContext.audioWorklet.addModule('compressor.js')
             .then(function() {
-                recorderNode = new AudioWorkletNode(audioContext, 'compressor', { channelCount: 1 });
-                recorderNode.port.postMessage({ eventType: defaultCompressorSettings });
+                let compressorNode = new AudioWorkletNode(audioContext, 'compressor', { channelCount: 1 });
+                //todo: can I just post the object straight through?
+                compressorNode.port.postMessage({ compressorSettings: JSON.stringify(defaultCompressorSettings) });
+                return compressorNode;
             });
     }
 
