@@ -109,8 +109,6 @@
         //         }
         //     ]
         // };
-        let fileName = '';
-        //temporarily commented out
         recordingService.Download(fileName);
     }
 

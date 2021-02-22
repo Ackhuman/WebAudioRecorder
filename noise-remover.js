@@ -1,4 +1,4 @@
-class NoiseRemover extends AudioWorkletProcessor {
+class Compressor extends AudioWorkletProcessor {
     NUM_SAMPLES = 128;
     constructor() {
         super();
@@ -19,4 +19,4 @@ class NoiseRemover extends AudioWorkletProcessor {
     sampleRoomTone()
 
 }
-registerProcessor('noise-remover', NoiseRemover);
+registerProcessor('noise-remover', Compressor);

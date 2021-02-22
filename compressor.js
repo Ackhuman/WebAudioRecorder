@@ -24,7 +24,8 @@ class Compressor extends AudioWorkletProcessor {
         kneeLowerBound: 0,
         attackTimeSamples: 0,
         releaseTimeSamples: 0,
-        peak: 0
+        peak: 0,
+        maxSamplesToTrack: this.SAMPLES_PER_SECOND * 15
     }
     //since we are processing the audio online we have to keep track of statistics about the stream
     compressorState = {
@@ -95,9 +96,15 @@ class Compressor extends AudioWorkletProcessor {
         //  in order to make the attack time work.
         //  Reset the count when we've passed the release time.
         if(sample >= this.settingsInSamples.noiseFloor) {
-            this.compressorState.numSamplesAboveNoiseFloor++;
+            this.compressorState.numSamplesAboveNoiseFloor = Math.max(
+                this.compressorState.numSamplesAboveNoiseFloor + 1, 
+                this.settingsInSamples.maxSamplesToTrack
+            );
         } else {
-            this.compressorState.numSamplesBelowNoiseFloor++;
+            this.compressorState.numSamplesBelowNoiseFloor = Math.max(
+                this.compressorState.numSamplesBelowNoiseFloor + 1, 
+                this.settingsInSamples.maxSamplesToTrack
+            );;
         }
         let beforeAttack = this.compressorState.numSamplesAboveNoiseFloor < this.settingsInSamples.attackTimeSamples;
         let afterRelease = this.compressorState.numSamplesBelowNoiseFloor >= this.settingsInSamples.releaseTimeSamples;
@@ -135,11 +142,17 @@ class Compressor extends AudioWorkletProcessor {
         this.settingsInSamples.kneeLowerBound = this.compressorSettings.knee0to1 
             * ((this.settingsInSamples.threshold - this.settingsInSamples.noiseFloor) / 2)
         this.settingsInSamples.peak = this.dBFSToSample(this.compressorSettings.peakDB);
+        //to avoid counts running out of control we will reset them after hitting a ceiling
+        this.settingsInSamples.maxSamplesToTrack = Math.max(
+            this.settingsInSamples.attackTimeSamples, 
+            this.settingsInSamples.releaseTimeSamples
+        ) * 2;
     }
     //the only message that's supported thus far is a serialized settings object
     onMessage(evt) {
         let newCompressorSettings = JSON.parse(evt.data.compressorSettings);
         Object.assign(this.compressorSettings, newCompressorSettings);
+        this.getSettingsSampleValues();
     }
     //convert a -1 to 1 sample value to DBFS
     sampleToDBFS(sample) {

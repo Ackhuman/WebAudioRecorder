@@ -53,9 +53,7 @@
         analyzer = createAnalyzerNode();
         return Promise.all([sourceWorkletPromise, compressorWorkletPromise, recorderWorkletPromise])
             .then(([src, compressorNode, recorder]) => {
-                //let dest = createAudioNetwork(analyzer, compressorNode, recorderNode);
-                let dest = analyzer.connect(compressorNode)
-                    .connect(recorderNode);
+                let dest = createAudioNetwork(inputSource, analyzer, compressorNode, recorderNode);
                 return WebSound.Service.Storage.InitLossless(audioContext, 1, processOnline, streamToDisk);
             });
     }
@@ -148,8 +146,13 @@
     function stopRecording() {
         recorderNode.port.postMessage({ eventType: 'stop' });
         updateRecordingState(recordingStates.stopped);
+        //since we're streaming the file, just finish it immediately
+        recorderNode.port.postMessage({ eventType: 'finish' });
+        inputSource = null;
+        audioStream.getTracks().forEach(track => track.stop());
+        updateRecordingState(recordingStates.saved);
     }
-
+    //todo: remove
     function downloadRecording(userFileName) {
         if(!streamToDisk) {
             WebSound.Service.Storage.DownloadData(userFileName);
