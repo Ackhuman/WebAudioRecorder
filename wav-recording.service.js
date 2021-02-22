@@ -188,6 +188,26 @@
         return recordingState;
     }
 
+    function onSoundCheckStarted() {
+        recorderNode.port.postMessage({ eventType: 'stop' });
+    }
+
+    function collectRoomTone() {
+        
+    }
+
+    function collectNormalVolume() {
+
+    }
+
+    function collectPeakVolume() {
+
+    }
+
+    function onSoundCheckComplete() {
+        recorderNode.port.postMessage({ eventType: 'start' });
+        
+    }
 
     function onWavEvent(evt) {
         switch(evt.data.eventType){

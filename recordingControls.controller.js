@@ -10,12 +10,14 @@
         Init: init,
         OnStartClicked: onStartClicked,
         OnPauseClicked: onPauseClicked,
-        OnStopClicked: onStopClicked
+        OnStopClicked: onStopClicked,
+        OnSoundCheckClicked: onSoundCheckClicked
     }
     const elements = {
         btnPause: null,
         btnStart: null,
         btnStop: null,
+        btnSoundCheck: null,
         selSources: null,
         selRecordingMethod: null,
         lblTimeDisplay: null
@@ -30,7 +32,7 @@
         window.addEventListener('recordingstatechanged', evt => onRecordingStateChanged(evt.detail.oldState, evt.detail.newState));
     }
 
-    function initSoundSourceSelector() {        
+    function initSoundSourceSelector() {
         WebSound.Service.Device.GetAvailableDevices()
             .then(devices => {
                 let audioDevices = devices.filter(device => device.kind === "audioinput");
@@ -110,6 +112,11 @@
         //     ]
         // };
         recordingService.Download(fileName);
+    }
+
+    async function onSoundCheckClicked() {
+        let settings = await WebSound.Controller.SoundCheck.OnSoundCheckStarted();
+        return settings;
     }
 
     function createDeviceOptionHtml(devices) {
