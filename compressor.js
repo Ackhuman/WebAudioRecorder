@@ -160,4 +160,4 @@ class Compressor extends AudioWorkletProcessor {
         return numSamples / this.SAMPLES_PER_SECOND;
     }
 }
-registerProcessor('compressor', NoiseRemover);
+registerProcessor('compressor', Compressor);
