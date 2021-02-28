@@ -16,6 +16,7 @@
     <script type="text/javascript" src="storage.service.js"></script>
     <script type="text/javascript" src="wav-recording.service.js"></script>
     <script type="text/javascript" src="recording.service.js"></script>
+    <script type="text/javascript" src="test-nodes.service.js"></script>
     <script type="text/javascript" src="visualizer.controller.js"></script>
     <script type="text/javascript" src="statusDisplay.controller.js"></script>
     <script type="text/javascript" src="soundCheck.controller.js"></script>
@@ -56,7 +57,11 @@
                 </div>
             </div>
         </div>
+        <div style="display:none;">
+            <audio id="audTestFile" src="content/compression-test-original.wav" preload="auto"></audio>
+        </div>
     </div>
+    <!-- Templates -->
     <script type="text/template" id="tplIntroText">
         <h2>Web sound recorder</h2>
         <div class="row">
@@ -112,11 +117,17 @@
         <button id="btnStop"
             type="button" 
             class="btn btn-link"
-            disabled="disabled"
-            onclick="WebSound.Controller.RecordingControls.OnSetupClicked()"
+            onclick="WebSound.Controller.RecordingControls.OnSoundCheckClicked()"
             title="Click this button to enter a guided sound check, which will attempt to produce optimal audio levels.">
             <i class="fa fa-sliders-h"></i>
-        </button>        
+        </button>
+        <button id="btnTest"
+            type="button" 
+            class="btn btn-link"
+            onclick="WebSound.Service.TestNodes.TestCompression()"
+            title="Test button">
+            <i class="fa fa-check-square"></i>
+        </button>
     </script>
 
     <script type="text/template" id="tplFileNameModal">
@@ -137,5 +148,8 @@
         WebSound.Controller.Main.Init();
         WebSound.Controller.RecordingControls.Init();
         WebSound.Controller.StatusDisplay.Init();
+        if(true) {
+            WebSound.Service.TestNodes.Init();
+        }
     </script>
 </body>

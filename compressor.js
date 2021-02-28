@@ -10,6 +10,7 @@ class Compressor extends AudioWorkletProcessor {
         noiseFloorDB: -40,
         thresholdDB: -10,
         ratioToOne: 2,
+        inverseRatio: null,
         attackTimeSecs: 0.2,
         releaseTimeSecs: 1,
         knee0to1: 0.0,
@@ -20,17 +21,22 @@ class Compressor extends AudioWorkletProcessor {
     //some settings will be preprocessed to avoid doing a lot of mults/divs
     settingsInSamples = {
         noiseFloor: 0,
+        noiseFloorInverse: -0,
         threshold: 0,
+        thresholdInverse: -0,
         kneeLowerBound: 0,
+        kneeLowerBoundInverse: -0,
         attackTimeSamples: 0,
         releaseTimeSamples: 0,
         peak: 0,
+        peakInverse: -0,
         maxSamplesToTrack: this.SAMPLES_PER_SECOND * 15
     }
     //since we are processing the audio online we have to keep track of statistics about the stream
     compressorState = {
-        numSamplesAboveNoiseFloor: 0,
+        numSamplesAboveThreshold: 0,
         numSamplesBelowNoiseFloor: 0,
+        isCompressing: false,
         //online amplification is going to be difficult because we need to keep a buffer
         //  of the peak sample, but how do we ensure there is always a peak in the buffer
         //  while expiring them after a certain time?
@@ -61,9 +67,14 @@ class Compressor extends AudioWorkletProcessor {
         //loop through the channel's samples and compress if we should do that
         while(sampleIndex < inputChannel.length){
             let sample = inputChannel[sampleIndex];
-            let shouldCompress = this.shouldCompressSample(sample);
-            if(shouldCompress){
+            this.updateCompressorState(sample);
+            if(this.compressorState.isCompressing){
+                let oldSample = sample;
                 sample = this.getCompressedSample(sample);
+                if(sample > 0.5) {
+                    var x = sample;
+                    var y = oldSample;
+                }
             }
             outputChannel[sampleIndex] = sample;
             sampleIndex++;
@@ -77,9 +88,10 @@ class Compressor extends AudioWorkletProcessor {
     //get the compressed value of the sample
     //todo: implement soft knee. Not sure how to do this because I'm very stupid
     getCompressedSample(sample, knee) {
-        return ((sample - this.settingsInSamples.threshold) / this.compressorSettings.ratioToOne) 
-            + this.settingsInSamples.threshold;
+        //multiplications are faster so use the inverse of the ratio.
+        return sample * this.compressorSettings.inverseRatio;
     }
+    
     //do not use yet. I need to keep track of peaks in a buffer that drops expired values
     amplifyFrame(outputChannel) {
         let maxSample = inputChannel.reduce((max, sample) => sample > max ? sample : max);
@@ -91,22 +103,28 @@ class Compressor extends AudioWorkletProcessor {
         }
     }
     //checks whether or not the sample should be compressed, as well as updating the statistics for the stream
-    shouldCompressSample(sample) {
+    updateCompressorState(sample) {
+        let testSample = Math.abs(sample);
         //Since this runs online, we need to keep track of the number of samples above the noise floor
         //  in order to make the attack time work.
         //  Reset the count when we've passed the release time.
-        if(sample >= this.settingsInSamples.noiseFloor) {
-            this.compressorState.numSamplesAboveNoiseFloor = Math.max(
-                this.compressorState.numSamplesAboveNoiseFloor + 1, 
+        //todo: the compressor doesn't kick in until the attack time completes which means there's a loud part
+        //      if the sound comes very fast. maybe it should compress the whole buffer immediately if the threshold
+        //      is surpassed. it would also really help to have a buffer that's at least the attack time if possible.
+        let compressionMinimum = this.settingsInSamples.kneeLowerBound > 0 && this.settingsInSamples.kneeLowerBound
+            || this.settingsInSamples.threshold
+        if(testSample >= compressionMinimum) {
+            this.compressorState.numSamplesAboveThreshold = Math.min(
+                this.compressorState.numSamplesAboveThreshold + 1, 
                 this.settingsInSamples.maxSamplesToTrack
             );
         } else {
-            this.compressorState.numSamplesBelowNoiseFloor = Math.max(
+            this.compressorState.numSamplesBelowNoiseFloor = Math.min(
                 this.compressorState.numSamplesBelowNoiseFloor + 1, 
                 this.settingsInSamples.maxSamplesToTrack
             );;
         }
-        let beforeAttack = this.compressorState.numSamplesAboveNoiseFloor < this.settingsInSamples.attackTimeSamples;
+        let beforeAttack = this.compressorState.numSamplesAboveThreshold < this.settingsInSamples.attackTimeSamples;
         let afterRelease = this.compressorState.numSamplesBelowNoiseFloor >= this.settingsInSamples.releaseTimeSamples;
         //reset the release count if we're past the attack threshold
         if (beforeAttack) {
@@ -114,25 +132,19 @@ class Compressor extends AudioWorkletProcessor {
         }
         //reset the attack count if we're past the release threshold
         if (afterRelease) {
-            this.compressorState.numSamplesAboveNoiseFloor = 0;
+            this.compressorState.numSamplesAboveThreshold = 0;
         }
         //if we're before the attack time or after the release time, don't compress
         if(beforeAttack || afterRelease) {
-            return false;
-        }
-        //if above threshold, compress
-        if(sample > this.settingsInSamples.threshold) {
-            return true;
-        }
-        //if a knee is set and above the lower bound, compress
-        if(this.settingsInSamples.kneeLowerBound > 0 && sample > this.settingsInSamples.kneeLowerBound) {
-            return true;
-        }
-        return false;
+            this.compressorState.isCompressing = false;
+        } else {
+            this.compressorState.isCompressing = true;
+        }        
     }
 
     //preprocess the settings values so we can avoid doing as much math on the stream
     getSettingsSampleValues() {
+        this.compressorSettings.inverseRatio = 1 / this.compressorSettings.ratioToOne;
         this.settingsInSamples.attackTimeSamples = this.timeToSampleCount(this.compressorSettings.attackTimeSecs);
         this.settingsInSamples.releaseTimeSamples = this.timeToSampleCount(this.compressorSettings.releaseTimeSecs);
         this.settingsInSamples.noiseFloor = this.dBFSToSample(this.compressorSettings.noiseFloorDB);
@@ -140,7 +152,7 @@ class Compressor extends AudioWorkletProcessor {
         //this starts the knee at half of the range between the noise floor and threshold.
         //  no idea if this is valid haha lol
         this.settingsInSamples.kneeLowerBound = this.compressorSettings.knee0to1 
-            * ((this.settingsInSamples.threshold - this.settingsInSamples.noiseFloor) / 2)
+            * ((this.settingsInSamples.threshold - this.settingsInSamples.noiseFloor) / 2);
         this.settingsInSamples.peak = this.dBFSToSample(this.compressorSettings.peakDB);
         //to avoid counts running out of control we will reset them after hitting a ceiling
         this.settingsInSamples.maxSamplesToTrack = Math.max(

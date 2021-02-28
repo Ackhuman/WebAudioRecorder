@@ -1,5 +1,4 @@
 (function() {
-    
     if (typeof(WebSound) === "undefined") {
         WebSound = {};
     }
@@ -7,44 +6,64 @@
         WebSound.Service = {}; 
     }
 
-    WebSound.Service.WavRecording = wavRecordingService();
-
-    const recordingStates = {
-        notStarted: 'Not Started',
-        started: 'Started',
-        paused: 'Paused',
-        stopped: 'Stopped',
-        saved: 'Saved'
+    WebSound.Service.TestNodes = {
+        Init: init,
+        TestCompression: testCompression
     }
+    const elements = {
+        audTestFile: null
+    };
+    const contextOptions = { 
+        latencyHint: 'playback',
+        sampleRate: 44100 
+    };
 
-    function wavRecordingService() {
-        return {
-            Init: init,
-            Start: startRecording,
-            PauseOrResume: pauseOrResumeRecording,
-            Stop: stopRecording,
-            Download: downloadRecording,
-            DumpData: dumpData,
-            GetRecorderState: getRecorderState,
-            GetAnalyzer: getAnalyzer,
-            SetStatistics: setStatistics
-        }
-    }
-    
     var audioContext = null;
     var inputSource = null;
     var recorderNode = null;
     var audioStream = null;
-    var recordingState = null;
-    var processOnline = true;
-    var streamToDisk = true;
-    var analyzer = null;
-    var recorderStatistics = {};
+    function init() {
+        Object.getOwnPropertyNames(elements)
+            .forEach(name => elements[name] = document.getElementById(name));
+    }
+
+    function testCompression() {
+        audioContext = new AudioContext(contextOptions);
+        let sourceWorkletPromise = createSourceWorklet();
+        let compressorWorkletPromise = createCompressorWorklet();
+        let recorderWorkletPromise = createRecorderWorklet();
+        audioContext.createBufferSource();
+
+        audTestFile.addEventListener('ended', () => {
+            stopRecording();
+        });
+        return Promise.all([sourceWorkletPromise, compressorWorkletPromise, recorderWorkletPromise])
+            .then(([src, compressorNode, recorder]) => {
+                let dest = createAudioNetwork(inputSource, compressorNode, recorderNode);
+                return WebSound.Service.Storage.InitLossless(audioContext, 1, true, true);
+            })
+            .then(() => {
+                return startRecording();
+            })
+            .then(() => {
+                audTestFile.play();
+            });        
+    }
+
+    function createRecorderWorklet() {
+        return audioContext.audioWorklet.addModule('wav-processor.js')
+            .then(function() {
+                recorderNode = new AudioWorkletNode(audioContext, 'wav-processor', { channelCount: 1 });
+                recorderNode.port.postMessage({ eventType: 'processOnline' });
+                return recorderNode;
+            });
+    }
+
     var defaultCompressorSettings = {
-        noiseFloorDB: -40,
-        thresholdDB: -10,
+        noiseFloorDB: -45,
+        thresholdDB: -25,
         ratioToOne: 2.5,
-        attackTimeSecs: 0.2,
+        attackTimeSecs: 0.1,
         releaseTimeSecs: 1,
         knee0to1: 0.0,
         compressFromPeak: false,
@@ -52,55 +71,6 @@
         peakDB: -1
     };
 
-    const contextOptions = { 
-        latencyHint: 'playback',
-        sampleRate: 44100 
-    };
-
-    function init() { 
-        audioContext = new AudioContext(contextOptions);
-        let sourceWorkletPromise = createSourceWorklet();
-        let recorderWorkletPromise = createRecorderWorklet();
-        let compressorWorkletPromise = createCompressorWorklet();
-        audioContext.createBufferSource();
-        analyzer = createAnalyzerNode();
-        return Promise.all([sourceWorkletPromise, compressorWorkletPromise, recorderWorkletPromise])
-            .then(([src, compressorNode, recorder]) => {
-                let dest = createAudioNetwork(inputSource, analyzer, compressorNode, recorderNode);
-                return WebSound.Service.Storage.InitLossless(audioContext, 1, processOnline, streamToDisk);
-            });
-    }
-
-    function setStatistics(statistics) {
-        Object.assign(recorderStatistics, statistics);
-    }
-
-    function getAnalyzer() {
-        return analyzer;
-    }
-
-    function createSourceWorklet() { 
-        return WebSound.Service.Device.GetMediaStream()
-            .then(function(stream) {
-                audioStream = stream;
-                inputSource = audioContext.createMediaStreamSource(stream);
-            });
-    }
-
-    function createRecorderWorklet() {
-        return audioContext.audioWorklet.addModule('wav-processor.js')
-            .then(function() {
-                recorderNode = new AudioWorkletNode(audioContext, 'wav-processor', { channelCount: 1 });
-                if (processOnline) {
-                    recorderNode.port.postMessage({ eventType: 'processOnline' });
-                }
-                return recorderNode;
-            });
-    }
-
-    function createAudioNetwork(...nodes) {
-        return nodes.reduce((network, node) => network.connect(node));
-    }
     function createCompressorWorklet() {
         return audioContext.audioWorklet.addModule('compressor.js')
             .then(function() {
@@ -110,25 +80,15 @@
                 return compressorNode;
             });
     }
-
-    // function createCompressorWorklet(){
-    //     var compressor = audioContext.createDynamicsCompressor();
-    //     compressor.threshold.setValueAtTime(defaultCompressorSettings.noiseFloorDB, audioContext.currentTime);
-    //     compressor.knee.setValueAtTime(defaultCompressorSettings.thresholdDB - defaultCompressorSettings.noiseFloorDB, audioContext.currentTime);
-    //     compressor.ratio.setValueAtTime(defaultCompressorSettings.ratioToOne, audioContext.currentTime);
-    //     compressor.attack.setValueAtTime(defaultCompressorSettings.attackTimeSecs, audioContext.currentTime);
-    //     compressor.release.setValueAtTime(defaultCompressorSettings.releaseTimeSecs, audioContext.currentTime);
-    //     return Promise.resolve(compressor);
-    // }
-
-    function createAnalyzerNode() {        
-        let analyzer = audioContext.createAnalyser();
-        analyzer.minDecibels = -90;
-        analyzer.maxDecibels = -10;
-        analyzer.smoothingTimeConstant = 0.85;
-        return analyzer;
+    
+    function createSourceWorklet() { 
+        inputSource = audioContext.createMediaElementSource(audTestFile);
     }
 
+    function createAudioNetwork(...nodes) {
+        return nodes.reduce((network, node) => network.connect(node));
+    }
+    
     function startRecording() {
         if (inputSource == null) {
             return init().then(() => startRecording());
@@ -142,74 +102,14 @@
                 .then(function({ audioStream, fileStream }) {
                     recorderNode.port.onerror = onWavError;
                     recorderNode.port.postMessage({ eventType: 'start' });
-                    updateRecordingState(recordingStates.started);
                     streamAudioToFile(audioStream, fileStream);
                 });
         }
     }
 
-    function pauseOrResumeRecording() {
-        if(recordingState === recordingStates.started){
-            recorderNode.port.postMessage({ eventType: 'stop' });
-            updateRecordingState(recordingStates.paused);
-        } else { 
-            recorderNode.port.postMessage({ eventType: 'start' });
-            updateRecordingState(recordingStates.started);
-        }
-    }
-
-    function stopRecording() {
+    function stopRecording() {        
         recorderNode.port.postMessage({ eventType: 'stop' });
-        updateRecordingState(recordingStates.stopped);
-        //since we're streaming the file, just finish it immediately
         recorderNode.port.postMessage({ eventType: 'finish' });
-        inputSource = null;
-        audioStream.getTracks().forEach(track => track.stop());
-        updateRecordingState(recordingStates.saved);
-    }
-    //todo: remove
-    function downloadRecording(userFileName) {
-        if(!streamToDisk) {
-            WebSound.Service.Storage.DownloadData(userFileName);
-        }
-        recorderNode.port.postMessage({ eventType: 'finish' });
-        inputSource = null;
-        audioStream.getTracks().forEach(track => track.stop());
-        updateRecordingState(recordingStates.saved);
-    }
-
-    function dumpData() {
-        WebSound.Service.Storage.DumpData();
-        recorderNode.port.postMessage({ eventType: 'finish' });
-        inputSource = null;
-        audioStream.getTracks().forEach(track => track.stop());
-        updateRecordingState(recordingStates.notStarted);
-    }
-
-    function updateRecordingState(newState){
-        let oldState = recordingState;
-        let evt = new CustomEvent('recordingstatechanged', 
-        {
-            detail: {
-                oldState: oldState,
-                newState: newState
-            }
-        });
-        window.dispatchEvent(evt);
-        recordingState = newState;
-    }
-
-    function getRecorderState(){
-        return recordingState;
-    }
-
-    function onWavEvent(evt) {
-        switch(evt.data.eventType){
-            case 'dataavailable':
-                const audioData = evt.data.audioBuffer;
-                WebSound.Service.Storage.DataAvailable(audioData);
-                break;
-        }
     }
     async function initFileStream() {
         let fileExtension = WebSound.Service.Device.GetAudioFileExtension();
@@ -311,5 +211,4 @@
         saveAs(msg, `error-${errTime}.debug.txt`);
         WebSound.Service.Storage.DownloadData(`current-recorded-data-${errTime}`);
     }
-
 })();

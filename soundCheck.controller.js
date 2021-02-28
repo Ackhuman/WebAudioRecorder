@@ -11,6 +11,10 @@
     }
     var audioContext = null;
     var inputSource = null;
+    const contextOptions = { 
+        latencyHint: 'playback',
+        sampleRate: 44100 
+    };
     
     function onSoundCheckStarted() {
         audioContext = new AudioContext(contextOptions);
@@ -20,32 +24,35 @@
         return Promise.all([sourceWorkletPromise, soundCheckWorkletPromise])
             .then(([src, soundCheckProcessor]) => {
                 inputSource.connect(soundCheckProcessor);
-                return performSoundCheck(soundCheckProcessor);
+                let statistics = performSoundCheck(soundCheckProcessor);
+                if(statistics.normalPctPeaks > 0 || statistics.peakPctPeaks > 0.01) {
+                    getVolumeAlertConfig(Math.max(statistics.normalPctPeaks, statistics.peakPctPeaks));
+                }
+                return statistics;
             });
     }
 
     function performSoundCheck(soundCheckProcessor) {
-        let soundCheck = this.dialogConfigs.reduce(async function(settings, config) {
-            let result = await startSoundCheckStep(soundCheckProcessor, config);
-            return Object.defineProperty(settings, result.eventType, { value: result.value });
-        }, {});
-        return soundCheck.then(function(settings) {
+        let statistics = {};
+        soundCheckProcessor.port.onmessage = evt => Object.defineProperty(statistics, evt.data.eventType, { value: evt.data.value });
+        let soundCheck = this.dialogConfigs.reduce((prev, config) =>
+            prev.then(() => 
+                startSoundCheckStep(soundCheckProcessor, config)
+            ), 
+            Promise.resolve({})
+        );
+        return soundCheck.then(function() {
             audioStream.getTracks().forEach(track => track.stop());
             soundCheckProcessor.port.postMessage({ eventType: "soundCheckComplete" });
-            return settings;
+            return statistics;
         });
     }
 
     function startSoundCheckStep(soundCheckProcessor, stepConfig) {
         let stepComplete = WebSound.Dialog.Prompt(stepConfig);
         soundCheckProcessor.port.postMessage({ eventType: `${stepConfig.stepName}Start` });
-        stepComplete.then(() => {
+        return stepComplete.then(() => {
             soundCheckProcessor.port.postMessage({ eventType: `${stepConfig.stepName}End` });
-        });
-        return new Promise(resolve => {
-            soundCheckProcessor.port.onMessage = function() {
-                resolve(evt.data);
-            };
         });
     }
 
@@ -83,6 +90,7 @@
                     value: false
                 }
             ],
+            height: 250,
             stepName: 'roomTone'
         },
         {
@@ -102,6 +110,7 @@
                     value: false
                 }
             ],
+            height:200,
             stepName: 'voiceNormal'
         },
         {
@@ -124,4 +133,22 @@
             stepName: 'voicePeak'
         }
     ];
+
+    function getVolumeAlertConfig(pctPeaks) { 
+        return {
+            title: 'Volume too high',
+            text: `Your volume is ${pctPeaks * 100 > 1 ? 'far ' : ''}too high. Your audio peaked ${pctPeaks * 100}% of the time.
+                Adjust your volume, or if you can't do that, move away from your mic.
+                You should restart the sound check process afterward.`,
+            choices: [
+                {
+                    text: 'OK',
+                    cssClass: 'btn btn-primary',
+                    reject: true,
+                    value: true
+                }
+            ],
+            stepName: 'voicePeak'
+        }
+    };
 })();
