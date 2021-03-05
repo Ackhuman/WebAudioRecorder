@@ -61,7 +61,7 @@
 
     var defaultCompressorSettings = {
         noiseFloorDB: -45,
-        thresholdDB: -25,
+        thresholdDB: -10,
         ratioToOne: 2.5,
         attackTimeSecs: 0.1,
         releaseTimeSecs: 1,

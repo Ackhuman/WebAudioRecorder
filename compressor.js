@@ -16,7 +16,10 @@ class Compressor extends AudioWorkletProcessor {
         knee0to1: 0.0,
         compressFromPeak: false,
         amplifyToMax: true,
-        peakDB: -1
+        peakDB: -1,
+        compressorFn: function(sample) {
+            return sample * this.compressorSettings.inverseRatio;
+        }
     };
     //some settings will be preprocessed to avoid doing a lot of mults/divs
     settingsInSamples = {
@@ -69,12 +72,7 @@ class Compressor extends AudioWorkletProcessor {
             let sample = inputChannel[sampleIndex];
             this.updateCompressorState(sample);
             if(this.compressorState.isCompressing){
-                let oldSample = sample;
                 sample = this.getCompressedSample(sample);
-                if(sample > 0.5) {
-                    var x = sample;
-                    var y = oldSample;
-                }
             }
             outputChannel[sampleIndex] = sample;
             sampleIndex++;
@@ -144,6 +142,12 @@ class Compressor extends AudioWorkletProcessor {
 
     //preprocess the settings values so we can avoid doing as much math on the stream
     getSettingsSampleValues() {
+        if(this.compressorSettings.knee0to1) {
+            this.compressorSettings.compressorFn = function(sample) {
+                const baseChange = 1 / Math.log10(this.compressorSettings.ratioToOne);
+                return Math.log10(sample) * baseChange;
+            }
+        }
         this.compressorSettings.inverseRatio = 1 / this.compressorSettings.ratioToOne;
         this.settingsInSamples.attackTimeSamples = this.timeToSampleCount(this.compressorSettings.attackTimeSecs);
         this.settingsInSamples.releaseTimeSamples = this.timeToSampleCount(this.compressorSettings.releaseTimeSecs);
