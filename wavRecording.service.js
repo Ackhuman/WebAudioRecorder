@@ -55,14 +55,19 @@ export class WavRecordingService {
     }
 
     async Init() {
-        this._audioStream = await DeviceService.GetMediaStream();
         this._audioContext = new AudioContext(contextOptions);
+        this._audioStream = await DeviceService.GetMediaStream();
+        this._inputSource = await this.getAudioSourceNode(this._audioStream)
         this._networkService = new AudioNetworkService(this._audioContext);
-        let [src, analyzer, compressorNode, recorder] = await this._networkService.createAudioNetwork(this._audioStream);
+        let [analyzer, compressorNode, recorder] = await this._networkService.createAudioNetwork(this._inputSource);
         this._analyzer = analyzer;
         this._recorderNode = recorder;
 
         this._initialized = true;
+    }
+    
+    getAudioSourceNode(audioStream) { 
+        return this._audioContext.createMediaStreamSource(audioStream);
     }
 
     async Start() {

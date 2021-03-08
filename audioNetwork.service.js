@@ -19,28 +19,23 @@ export class AudioNetworkService {
         this.audioContext = audioContext;
     }
     
-    async createAudioNetwork(audioStream){
+    async createAudioNetwork(src){
         let initSteps = [
-            this.createSourceWorklet(audioStream),
             this.createCompressorWorklet(),
             this.createRecorderWorklet(),
         ];
         this.audioContext.createBufferSource();
         let analyzer = this.createAnalyzerNode();
-        let [src, compressorNode, recorder] = await Promise.all(initSteps);
+        let [compressorNode, recorder] = await Promise.all(initSteps);
         this.connectAudioNetwork(
             src, 
             analyzer, 
             compressorNode, 
             recorder
         );
-        return [src, analyzer, compressorNode, recorder];
+        return [analyzer, compressorNode, recorder];
     }
     
-    async createSourceWorklet(audioStream) { 
-        let inputSource = this.audioContext.createMediaStreamSource(audioStream);
-        return inputSource;
-    }
 
     async createRecorderWorklet() {
         await this.audioContext.audioWorklet.addModule('wav-processor.js');
