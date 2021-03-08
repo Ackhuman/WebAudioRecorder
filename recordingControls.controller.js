@@ -1,178 +1,86 @@
-(function() {
-    if (typeof(WebSound) === "undefined") {
-        WebSound = {};
-    }
-    if (typeof(WebSound.Controller) === "undefined") {
-        WebSound.Controller = {}; 
-    }
+import { RecordingStates } from './wavRecording.service.js';
+import { DeviceService } from './device.service.js';
 
-    WebSound.Controller.RecordingControls = {
-        Init: init,
-        OnStartClicked: onStartClicked,
-        OnPauseClicked: onPauseClicked,
-        OnStopClicked: onStopClicked,
-        OnSoundCheckClicked: onSoundCheckClicked
-    }
-    const elements = {
+export class RecordingControls {
+    _recordingService = null;
+    _deviceService = null;
+    elements = {
         btnPause: null,
         btnStart: null,
         btnStop: null,
         btnSoundCheck: null,
         selSources: null,
         selRecordingMethod: null,
-        lblTimeDisplay: null
+        lblTimeDisplay: null,
+        lblStatusDisplay: null
     };
-    const recordingStates = WebSound.Service.Recording.RecordingStates;
-    var recordingService = null;
-
-    function init() {
-        Object.getOwnPropertyNames(elements)
-            .forEach(name => elements[name] = document.getElementById(name));
-        initSoundSourceSelector();
-        window.addEventListener('recordingstatechanged', evt => onRecordingStateChanged(evt.detail.oldState, evt.detail.newState));
+    constructor(recordingService) {
+        Object.getOwnPropertyNames(this.elements)
+            .forEach(name => this.elements[name] = document.getElementById(name));
+        this._recordingService = recordingService;
+        window.addEventListener('recordingstatechanged', evt => this._onRecordingStateChanged(evt.detail.oldState, evt.detail.newState));
     }
 
-    function initSoundSourceSelector() {
-        WebSound.Service.Device.GetAvailableDevices()
-            .then(devices => {
-                let audioDevices = devices.filter(device => device.kind === "audioinput");
-                if(audioDevices.length > 1) {
-                    createDeviceOptionHtml(audioDevices);
-                } else {
-                    document.getElementById('selSoundSource').style.display = 'none';
-                }
-            });
+    OnStartClicked() {
+        this._recordingService.Start();        
     }
 
-    function onStartClicked() {
-        let saveOrDumpDialogConfig = {
-            title: 'Dump current audio?',
-            text: 'Do you want to add to the current recording, or dump the recording and start a fresh one?',
-            choices: [
-                {
-                    text: 'Add',
-                    cssClass: 'btn btn-primary',
-                    reject: false,
-                    value: true
-                },
-                {
-                    text: 'Dump',
-                    cssClass: 'btn btn-danger',
-                    reject: false,
-                    value: false
-                }
-            ]
-        };
-        let proceedPromise = WebSound.Service.Storage.HasAudio()
-            ? WebSound.Dialog.Prompt(saveOrDumpDialogConfig)
-            : Promise.resolve(false);
-        proceedPromise
-            .then(function(dump) { 
-                if(dump) {
-                    WebSound.Service.Storage.DumpData();
-                }
-                let recordingMethod = WebSound.Service.Device.GetRecordingMethod();
-                //set the correct recording service
-                let useWavRecording = recordingMethod == "lossless";
-                WebSound.Service.Device.SetRecordingMethod(recordingMethod);
-                recordingService = useWavRecording 
-                    ? WebSound.Service.WavRecording
-                    : WebSound.Service.Recording;
-                recordingService.Start();
-            });
-        
+    OnPauseClicked() {
+        this._recordingService.PauseOrResume();
     }
 
-    function onPauseClicked() {
-        recordingService.PauseOrResume();
+    OnStopClicked() {
+        this._recordingService.Stop();
     }
 
-    function onStopClicked() {
-        recordingService.Stop();
-    }
-
-    function onDownloadClicked() {
-        // let fileNameDialogConfig = {
-        //     title: 'Save Audio',
-        //     height: 240,
-        //     text: 'If you want, enter a name for the file. The best practice would be to use your name and some description of what you\'re talking about.',
-        //     valueInputs: [
-        //         {
-        //             type: 'text',
-        //             placeholder: 'Enter a file name (optional)',
-        //             name: 'fileName'
-        //         }
-        //     ],
-        //     choices: [
-        //         {
-        //             text: 'Save',
-        //             cssClass: 'btn btn-primary',
-        //             reject: false
-        //         }
-        //     ]
-        // };
-        recordingService.Download(fileName);
-    }
-
-    async function onSoundCheckClicked() {
+    async OnSoundCheckClicked() {
         let settings = await WebSound.Controller.SoundCheck.OnSoundCheckStarted();
         return settings;
     }
 
-    function createDeviceOptionHtml(devices) {
-        return devices.map(device => `<option value="${device.deviceId}">${device.label}</option>`);
+    _onRecordingStateChanged(oldState, newState){
+        this._setDisabledState(newState);
+        this._setButtonIcon(newState);
     }
 
-    function onRecordingStateChanged(oldState, newState){
-        setDisabledState(newState);
-        setButtonIcon(newState);
-    }
-
-    function setButtonIcon(recorderState) {        
-        let pauseIconClassList = btnPause.querySelector('i').classList;
+    _setButtonIcon(recorderState) {        
+        let pauseIconClassList = this.elements.btnPause.querySelector('i').classList;
         switch(recorderState) {
-            case recordingStates.notStarted:
-            case recordingStates.saved:
-            case recordingStates.started:
-            case recordingStates.stopped:
+            case RecordingStates.notStarted.title:
+            case RecordingStates.saved.title:
+            case RecordingStates.started.title:
+            case RecordingStates.stopped.title:
                 pauseIconClassList.replace('fa-play', 'fa-pause');
                 break;
-            case recordingStates.paused:
+            case RecordingStates.paused.title:
                 pauseIconClassList.replace('fa-pause', 'fa-play');
                 break;
         }
     }
 
-    function setDisabledState(recorderState) {
+    _setDisabledState(recorderState) {
         switch(recorderState) {
-            case recordingStates.notStarted:
-            case recordingStates.saved:
-                setButtonsDisabledState(false, true, true, true, true, false);
+            case RecordingStates.notStarted.title:
+            case RecordingStates.saved.title:
+                this._setButtonsDisabledState(false, true, true);
                 break;
-            case recordingStates.started:
-            case recordingStates.paused:
-                setButtonsDisabledState(true, false, false, true, true, true);
+            case RecordingStates.started.title:
+            case RecordingStates.paused.title:
+                this._setButtonsDisabledState(true, false, false);
                 break;
-            case recordingStates.stopped:
-                setButtonsDisabledState(false, false, true, false, false, false);
+            case RecordingStates.stopped.title:
+                this._setButtonsDisabledState(false, false, true);
                 break;
         }
     }
 
-    function setButtonsDisabledState(
+    _setButtonsDisabledState(
         btnStartDisabled, 
         btnStopDisabled,
-        btnPauseDisabled, 
-        btnDownloadDisabled,
-        btnDumpDisabled,
-        selSoundSourceDisabled
+        btnPauseDisabled
     ) {
-        elements.btnStart.disabled = btnStartDisabled;
-        elements.btnStop.disabled = btnStopDisabled;
-        elements.btnPause.disabled = btnPauseDisabled;
-        // elements.btnDownload.disabled = btnDownloadDisabled;
-        // elements.btnDump.disabled = btnDumpDisabled;
-        //selSoundSource.disabled = selSoundSourceDisabled;
+        this.elements.btnStart.disabled = btnStartDisabled;
+        this.elements.btnStop.disabled = btnStopDisabled;
+        this.elements.btnPause.disabled = btnPauseDisabled;
     }
-
-})();
+}

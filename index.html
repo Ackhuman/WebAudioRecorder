@@ -10,18 +10,6 @@
     
     <!-- App -->
     <link rel="stylesheet" href="app.css"/>
-    <script type="text/javascript" src="dialog.js"></script>
-    <script type="text/javascript" src="error.service.js"></script>
-    <script type="text/javascript" src="device.service.js"></script>
-    <script type="text/javascript" src="storage.service.js"></script>
-    <script type="text/javascript" src="wav-recording.service.js"></script>
-    <script type="text/javascript" src="recording.service.js"></script>
-    <script type="text/javascript" src="test-nodes.service.js"></script>
-    <script type="text/javascript" src="visualizer.controller.js"></script>
-    <script type="text/javascript" src="statusDisplay.controller.js"></script>
-    <script type="text/javascript" src="soundCheck.controller.js"></script>
-    <script type="text/javascript" src="recordingControls.controller.js"></script>
-    <script type="text/javascript" src="index.js"></script>
 </head>
 <body class="app">
 
@@ -46,23 +34,20 @@
                             <div class="col-sm-3 align-middle text-right px-0 py-2">
                                 Recording Method:
                             </div>
-                            <div id="recordingMethod" class="col-sm-5">
-                                <select id="selRecordingMethod" class="custom-select">
-                                    <option value="lossless" selected>WAV recording (experimental)</option>
-                                    <option value="lossy">WEBM/OGG recording</option>
-                                </select>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div style="display:none;">
-            <audio id="audTestFile" src="content/compression-test-original.wav" preload="auto"></audio>
+            <audio id="audTestFile" 
+                src="content/compression-test-original.wav" 
+                preload="auto">
+            </audio>
         </div>
     </div>
     <!-- Templates -->
-    <script type="text/template" id="tplIntroText">
+    <script type="text/template" id="tplIntroText" container="introTextContainer">
         <h2>Web sound recorder</h2>
         <div class="row">
             <div class="col-sm-12">
@@ -74,7 +59,7 @@
             </div>
         </div>
     </script>
-    <script type="text/template" id="tplDisplay">
+    <script type="text/template" id="tplDisplay" container="displayContainer">
         <span id="recordingStatus" class=" col-sm-3 align-middle py-2">
             <div id="lblTimeDisplay">
                 00:00:00
@@ -90,11 +75,11 @@
             <canvas id="visualizer" height="150" width="400"></canvas>
         </span>
     </script>
-    <script type="text/template" id="tplControls">
+    <script type="text/template" id="tplControls" container="containerControls">
         <button id="btnStart"
             type="button" 
             class="btn btn-link"
-            onclick="WebSound.Controller.RecordingControls.OnStartClicked()"
+            onclick="recordingController.OnStartClicked()"
             title="Start">
             <i class="fa fa-circle"></i>
         </button>
@@ -102,7 +87,7 @@
             type="button" 
             class="btn btn-link"
             disabled="disabled"
-            onclick="WebSound.Controller.RecordingControls.OnPauseClicked()"
+            onclick="recordingController.OnPauseClicked()"
             title="Pause Recording">
             <i class="fa fa-pause"></i>
         </button>
@@ -110,14 +95,14 @@
             type="button" 
             class="btn btn-link"
             disabled="disabled"
-            onclick="WebSound.Controller.RecordingControls.OnStopClicked()"
+            onclick="recordingController.OnStopClicked()"
             title="Stop Recording">
             <i class="fa fa-stop"></i>
         </button>
-        <button id="btnStop"
+        <button id="btnCheck"
             type="button" 
             class="btn btn-link"
-            onclick="WebSound.Controller.RecordingControls.OnSoundCheckClicked()"
+            onclick="recordingController.OnSoundCheckClicked()"
             title="Click this button to enter a guided sound check, which will attempt to produce optimal audio levels.">
             <i class="fa fa-sliders-h"></i>
         </button>
@@ -142,14 +127,5 @@
             </div>
         </div>
     </script>
-
-    <script id="initScript" type="text/javascript">
-        WebSound.Dialog.Init();
-        WebSound.Controller.Main.Init();
-        WebSound.Controller.RecordingControls.Init();
-        WebSound.Controller.StatusDisplay.Init();
-        if(true) {
-            WebSound.Service.TestNodes.Init();
-        }
-    </script>
+    <script id="app" type="module" src="./index.js"></script>
 </body>

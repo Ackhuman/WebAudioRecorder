@@ -1,3 +1,12 @@
+import { contextOptions, defaultCompressorSettings } from './wavRecording.service.js'
+
+const elements = {
+    audTestFile: null
+};
+
+export class TestNodes {
+
+}
 (function() {
     if (typeof(WebSound) === "undefined") {
         WebSound = {};
@@ -10,13 +19,6 @@
         Init: init,
         TestCompression: testCompression
     }
-    const elements = {
-        audTestFile: null
-    };
-    const contextOptions = { 
-        latencyHint: 'playback',
-        sampleRate: 44100 
-    };
 
     var audioContext = null;
     var inputSource = null;
@@ -39,8 +41,7 @@
         });
         return Promise.all([sourceWorkletPromise, compressorWorkletPromise, recorderWorkletPromise])
             .then(([src, compressorNode, recorder]) => {
-                let dest = createAudioNetwork(inputSource, compressorNode, recorderNode);
-                return WebSound.Service.Storage.InitLossless(audioContext, 1, true, true);
+                createAudioNetwork(inputSource, compressorNode, recorderNode);
             })
             .then(() => {
                 return startRecording();
@@ -58,18 +59,6 @@
                 return recorderNode;
             });
     }
-
-    var defaultCompressorSettings = {
-        noiseFloorDB: -45,
-        thresholdDB: -10,
-        ratioToOne: 2.5,
-        attackTimeSecs: 0.1,
-        releaseTimeSecs: 1,
-        knee0to1: 0.0,
-        compressFromPeak: false,
-        amplifyToMax: false,
-        peakDB: -1
-    };
 
     function createCompressorWorklet() {
         return audioContext.audioWorklet.addModule('compressor.js')

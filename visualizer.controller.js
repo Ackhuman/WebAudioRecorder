@@ -1,149 +1,138 @@
-(function() {
-    
-    if (typeof(WebSound) === "undefined") {
-        WebSound = {};
-    }
-    if (typeof(WebSound.Controller) === "undefined") {
-        WebSound.Controller = {}; 
-    }
+export class Visualizer {
+    _canvasCtx = null;
+    _analyzer = null;
+    _paused = false;
+    _canvasWidth = 0;
+    _canvasHeight = 0;
+    _fillColor = 'rgb(0, 0, 0)';
+    _drawColor = 'rgb(255, 255, 255)';
+    _drawVisual = null;
 
-    WebSound.Controller.Visualizer = {
-        Init: init,
-        Start: start,
-        Reset: reset
-    };
-
-    const elements = {
-        visualizer: null
-    }
-    var canvasCtx = null;
-    var analyzer = null;
-    
-    var canvasWidth = 0;
-    var canvasHeight = 0;
-    var fillColor = 'rgb(0, 0, 0)';
-    var drawColor = 'rgb(255, 255, 255)';
-    var drawVisual = null;
-
-    function init() { 
-        Object.getOwnPropertyNames(elements)
-            .forEach(name => elements[name] = document.getElementById(name));
-        canvasCtx = elements.visualizer.getContext("2d");
+    _recordingService = null;
+    constructor(recordingService, elements) {
+        this.elements = elements;
+        this._canvasCtx = this.elements.visualizer.getContext("2d");
+        //todo: singleton service
+        this._recordingService = recordingService;
     }
 
-    function start() {
-        let recordingMethod = WebSound.Service.Device.GetRecordingMethod();
-        //set the correct recording service
-        let useWavRecording = recordingMethod == "lossless";
-        recordingService = useWavRecording 
-            ? WebSound.Service.WavRecording
-            : WebSound.Service.Recording;
-        analyzer = recordingService.GetAnalyzer();
-        visualize();
+    async Start() {
+        if(!this._analyzer){
+            this._analyzer = await this._recordingService.GetAnalyzer();
+        }
+        this._visualize();
+        this._paused = false;
     }
 
-    function reset() {
-        canvasCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-        canvasCtx.fillStyle = fillColor;
-        canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
-        cancelAnimationFrame(drawVisual);
+    PauseOrResume() {
+        cancelAnimationFrame(this._drawVisual);
+        this._paused = true;
     }
 
-    function visualize() {
-        canvasWidth = elements.visualizer.width;
-        canvasHeight = elements.visualizer.height;
+    Reset() {
+        this._canvasCtx.clearRect(0, 0, this._canvasWidth, this._canvasHeight);
+        this._canvasCtx.fillStyle = this._fillColor;
+        this._canvasCtx.fillRect(0, 0, this._canvasWidth, this._canvasHeight);
+        cancelAnimationFrame(this._drawVisual);
+    }
 
-        fillColor = 'rgb(51, 51, 51)';
-        drawColor = 'rgb(68, 255, 68)';
+    _visualize() {
+        this._canvasWidth = this.elements.visualizer.width;
+        this._canvasHeight = this.elements.visualizer.height;
+
+        this._fillColor = 'rgb(51, 51, 51)';
+        this._drawColor = 'rgb(68, 255, 68)';
 
         var visualSetting = "bars"//visualSelect.value;
 
         if (visualSetting === "sinewave") {
-            drawSineWave();
+            this._drawSineWave();
         } else if (visualSetting == "bars") {
-            drawBars();
+            this._drawBars();
         } else if (visualSetting == "off") {
-            canvasCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-            canvasCtx.fillStyle = "red";
-            canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+            this._canvasCtx.clearRect(0, 0, this._canvasWidth, this._canvasHeight);
+            this._canvasCtx.fillStyle = "red";
+            this._canvasCtx.fillRect(0, 0, this._canvasWidth, this._canvasHeight);
         }
     
     }
-
-    function drawBars() {
-        analyzer.fftSize = 256;
-        var bufferLengthAlt = analyzer.frequencyBinCount;
-        var dataArrayAlt = new Uint8Array(bufferLengthAlt);
-
-        canvasCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-
-        var drawBar = function() {
-            drawVisual = requestAnimationFrame(drawBar);
-
-            analyzer.getByteFrequencyData(dataArrayAlt);
-
-            canvasCtx.fillStyle = fillColor;
-            canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-            var barWidth = (canvasWidth / bufferLengthAlt) * 2.5;
-            var barHeight;
-            var x = 0;
-
-            for(var i = 0; i < bufferLengthAlt; i++) {
-                barHeight = dataArrayAlt[i];
-
-                canvasCtx.fillStyle = drawColor
-                canvasCtx.fillRect(x,canvasHeight-barHeight/2,barWidth,barHeight/2);
-
-                x += barWidth + 1;
-            }
-        };
-
-        drawBar();
+    _dataArrayAlt = null;
+    _drawBars() {
+        this._analyzer.fftSize = 256;
+        this._bufferLengthAlt = this._analyzer.frequencyBinCount
+        this._dataArrayAlt = new Uint8Array(this._bufferLengthAlt);
+        this._canvasCtx.clearRect(0, 0, this._canvasWidth, this._canvasHeight);
+        this._drawBar();
     }
 
-    function drawSineWave() {
-        analyzer.fftSize = 2048;
-        var bufferLength = analyzer.fftSize;
+    _drawBar() {
+        this._drawVisual = requestAnimationFrame(this._drawBar.bind(this));
+
+        this._analyzer.getByteFrequencyData(this._dataArrayAlt);
+
+        this._canvasCtx.fillStyle = this._fillColor;
+        this._canvasCtx.fillRect(0, 0, this._canvasWidth, this._canvasHeight);
+
+        var barWidth = (this._canvasWidth / this._bufferLengthAlt) * 2.5;
+        var barHeight;
+        var x = 0;
+
+        for(var i = 0; i < this._bufferLengthAlt; i++) {
+            barHeight = this._dataArrayAlt[i];
+
+            this._canvasCtx.fillStyle = this._drawColor
+            this._canvasCtx.fillRect(
+                x, 
+                this._canvasHeight-barHeight * 0.5, 
+                barWidth, 
+                barHeight * 0.5
+            );
+
+            x += barWidth + 1;
+        }
+    }
+
+    _drawSineWave() {
+        this._analyzer.fftSize = 2048;
+        var bufferLength = this._analyzer.fftSize;
         console.log(bufferLength);
         var dataArray = new Uint8Array(bufferLength);
 
-        canvasCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+        this._canvasCtx.clearRect(0, 0, this._canvasWidth, this._canvasHeight);
 
         var drawWave = function() {
-            drawVisual = requestAnimationFrame(drawWave);
-            analyzer.getByteTimeDomainData(dataArray);
+            this._drawVisual = requestAnimationFrame(drawWave);
+            this._analyzer.getByteTimeDomainData(dataArray);
 
-            canvasCtx.fillStyle = fillColor
-            canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+            this._canvasCtx.fillStyle = fillColor
+            this._canvasCtx.fillRect(0, 0, this._canvasWidth, this._canvasHeight);
 
-            canvasCtx.lineWidth = 2;
-            canvasCtx.strokeStyle = drawColor;
+            this._canvasCtx.lineWidth = 2;
+            this._canvasCtx.strokeStyle = drawColor;
 
-            canvasCtx.beginPath();
+            this._canvasCtx.beginPath();
 
-            var sliceWidth = canvasWidth * 1.0 / bufferLength;
+            var sliceWidth = this._canvasWidth * 1.0 / bufferLength;
             var x = 0;
 
             for(var i = 0; i < bufferLength; i++) {
 
                 var v = dataArray[i] / 128.0;
-                var y = v * canvasHeight/2;
+                var y = v * this._canvasHeight/2;
 
                 if(i === 0) {
-                    canvasCtx.moveTo(x, y);
+                    this._canvasCtx.moveTo(x, y);
                 } else {
-                    canvasCtx.lineTo(x, y);
+                    this._canvasCtx.lineTo(x, y);
                 }
 
                 x += sliceWidth;
             }
 
-            canvasCtx.lineTo(canvasWidth, canvasHeight / 2);
-            canvasCtx.stroke();
+            this._canvasCtx.lineTo(this._canvasWidth, this._canvasHeight / 2);
+            this._canvasCtx.stroke();
         };
 
         drawWave();
     }
-
-})();
+}

@@ -1,97 +1,85 @@
-(function() {
-    if (typeof(WebSound) === "undefined") {
-        WebSound = {};
-    }
-    if (typeof(WebSound.Controller) === "undefined") {
-        WebSound.Controller = {}; 
-    }
+import { Visualizer } from './visualizer.controller.js';
+import { RecordingStates } from './wavRecording.service.js';
 
-    WebSound.Controller.StatusDisplay = {
-        Init: init,
-        StartCounter: startRecordedTimeDisplay,
-        StopCounter: stopRecordedTimeDisplay,
-        ResetCounter: resetTimeDisplay,
-        UpdateRecordingState: updateRecordingState
-    };
-
-    const elements = {
+export class StatusDisplayController {
+    elements = {
         lblTimeDisplay: null,
-        lblStatusDisplay: null
+        lblStatusDisplay: null,
+        visualizer: null
     };
+    _visualizer = null;
+    _recordedTimeInterval = null;
+    _recordedTimeDurationSeconds = 0;
+    _pausedTimeInterval = null;
 
-    const recordingStates = WebSound.Service.Recording.RecordingStates;
-
-    function init() {
-        Object.getOwnPropertyNames(elements)
-            .forEach(name => elements[name] = document.getElementById(name));
-        window.addEventListener('recordingstatechanged', evt => updateRecordingState(evt.detail.newState));
-        WebSound.Controller.Visualizer.Init();
+    constructor(recordingService) {
+        Object.getOwnPropertyNames(this.elements)
+            .forEach(name => this.elements[name] = document.getElementById(name));
+        window.addEventListener('recordingstatechanged', evt => this.updateRecordingState(evt.detail.newState));
+        this._visualizer = new Visualizer(recordingService, this.elements);
     }
 
-    function updateRecordingState(newState) {
+    updateRecordingState(newState) {
         switch(newState) {
-            case recordingStates.notStarted:
-            case recordingStates.saved:
-                resetTimeDisplay();
-                WebSound.Controller.Visualizer.Reset();
+            case RecordingStates.notStarted.title:
+            case RecordingStates.saved.title:
+                this.resetTimeDisplay();
+                this._visualizer.Reset();
                 break;
-            case recordingStates.stopped:
-            case recordingStates.paused:
-                stopRecordedTimeDisplay();
+            case RecordingStates.stopped.title:
+            case RecordingStates.paused.title:
+                this.stopRecordedTimeDisplay();
+                this._visualizer.PauseOrResume();
                 break;
-            case recordingStates.started:
-                startRecordedTimeDisplay();
-                WebSound.Controller.Visualizer.Start();
+            case RecordingStates.started.title:
+                this.startRecordedTimeDisplay();
+                this._visualizer.Start();
                 break;
         }
-        elements.lblStatusDisplay.innerText = newState;
+        this.elements.lblStatusDisplay.innerText = newState;
     }
 
-    var recordedTimeInterval = null;
-    var recordedTimeDurationSeconds = 0;
-    function startRecordedTimeDisplay() {
-        if(pausedTimeInterval){
-            clearInterval(pausedTimeInterval);
-            pausedTimeInterval = null;
+    startRecordedTimeDisplay() {
+        if(this._pausedTimeInterval){
+            clearInterval(this._pausedTimeInterval);
+            this._pausedTimeInterval = null;
         }
-        recordedTimeInterval = setInterval(function() {
-            recordedTimeDurationSeconds++;
-            let displayText = getRecordedTimeDisplayText();
-            elements.lblTimeDisplay.innerText = displayText;
-        }, 1000);
+        this._recordedTimeInterval = setInterval(() => this._updateTimeDisplay(), 1000);
     }
 
-    var pausedTimeInterval = null;
-    function stopRecordedTimeDisplay() {
-        clearInterval(recordedTimeInterval);
-        recordedTimeInterval = null;
-        recordedTimeDurationSeconds = 0;
-        if(!pausedTimeInterval){
-            pausedTimeInterval = setInterval(function() {
-                elements.lblTimeDisplay.classList.toggle('blink');
-            }, 1000);
+    _updateTimeDisplay() {
+        this._recordedTimeDurationSeconds++;
+        let displayText = this._getRecordedTimeDisplayText();
+        this.elements.lblTimeDisplay.innerText = displayText;
+    }
+
+    stopRecordedTimeDisplay() {
+        clearInterval(this._recordedTimeInterval);
+        this._recordedTimeInterval = null;
+        this._recordedTimeDurationSeconds = 0;
+        if(!this._pausedTimeInterval){
+            this._pausedTimeInterval = setInterval(() => this.elements.lblTimeDisplay.classList.toggle('blink'), 1000);
         }
     }
 
-    function getRecordedTimeDisplayText() {        
-        let recordedTimeHours = Math.floor(recordedTimeDurationSeconds / (60 * 60));
-        let recordedTimeMinutes = Math.floor((recordedTimeDurationSeconds - (recordedTimeHours * 60 * 60)) / 60);
-        let recordedTimeSeconds = recordedTimeDurationSeconds - (recordedTimeHours * 60 * 60) - (recordedTimeMinutes * 60);
+    _getRecordedTimeDisplayText() {        
+        let recordedTimeHours = Math.floor(this._recordedTimeDurationSeconds / (60 * 60));
+        let recordedTimeMinutes = Math.floor((this._recordedTimeDurationSeconds - (recordedTimeHours * 60 * 60)) / 60);
+        let recordedTimeSeconds = this._recordedTimeDurationSeconds - (recordedTimeHours * 60 * 60) - (recordedTimeMinutes * 60);
         return `${padLeft("00", recordedTimeHours)}:${padLeft("00", recordedTimeMinutes)}:${padLeft("00", recordedTimeSeconds)}`;
     }
 
-    function resetTimeDisplay() {        
-        clearInterval(pausedTimeInterval);
-        clearInterval(recordedTimeInterval);
-        elements.lblTimeDisplay.innerText = "00:00:00";
-        elements.lblTimeDisplay.classList.remove('blink');
+    resetTimeDisplay() {        
+        clearInterval(this._pausedTimeInterval);
+        clearInterval(this._recordedTimeInterval);
+        this.elements.lblTimeDisplay.innerText = "00:00:00";
+        this.elements.lblTimeDisplay.classList.remove('blink');
     }
 
-    function padLeft(format, str) {
-        if(typeof(str) === "number"){
-            str = str.toString();
-        }
-        return format.substring(0, format.length - str.length) + str
+}
+function padLeft(format, str) {
+    if(typeof(str) === "number"){
+        str = str.toString();
     }
-
-})();
+    return format.substring(0, format.length - str.length) + str
+}
