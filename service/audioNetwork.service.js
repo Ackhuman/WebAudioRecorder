@@ -1,5 +1,3 @@
-import { DeviceService } from './device.service.js';
-
 export const defaultCompressorSettings = {
     noiseFloorDB: -40,
     thresholdDB: -10,

@@ -1,5 +1,5 @@
 import { Visualizer } from './visualizer.controller.js';
-import { RecordingStates } from './wavRecording.service.js';
+import { RecordingStates } from '../service/wavRecording.service.js';
 
 export class StatusDisplayController {
     elements = {

@@ -1,5 +1,5 @@
-import { RecordingStates } from './wavRecording.service.js';
-import { DeviceService } from './device.service.js';
+import { RecordingStates } from '../service/wavRecording.service.js';
+import { DeviceService } from '../service/device.service.js';
 
 export class RecordingControls {
     _recordingService = null;

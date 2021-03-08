@@ -1,7 +1,7 @@
-import { WavRecordingService } from './wavRecording.service.js';
-import { RecordingControls } from './recordingControls.controller.js';
-import { StatusDisplayController } from './statusDisplay.controller.js';
-import { TemplateBinderController } from './templateBinder.controller.js';
+import { WavRecordingService } from './service/wavRecording.service.js';
+import { RecordingControls } from './controller/recordingControls.controller.js';
+import { StatusDisplayController } from './controller/statusDisplay.controller.js';
+import { TemplateBinderController } from './controller/templateBinder.controller.js';
 
 let recordingService = new WavRecordingService();
 let templateBinder = new TemplateBinderController();

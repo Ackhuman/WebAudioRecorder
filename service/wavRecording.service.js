@@ -1,5 +1,5 @@
-import { WavProcessorStream } from "./wavProcessorStream.js";
-import { WavFileStream, onWavError }  from './wavFileStream.js';
+import { WavProcessorStream } from "../wavProcessorStream.js";
+import { WavFileStream, onWavError }  from '../wavFileStream.js';
 import { DeviceService } from './device.service.js';
 import { AudioNetworkService } from './audioNetwork.service.js';
 
