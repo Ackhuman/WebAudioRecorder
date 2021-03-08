@@ -36,7 +36,7 @@ export class StatusDisplayController {
                 this._visualizer.Start();
                 break;
         }
-        this.elements.lblStatusDisplay.innerText = newState;
+        this.elements.lblStatusDisplay.innerText = newState.title;
     }
 
     startRecordedTimeDisplay() {
