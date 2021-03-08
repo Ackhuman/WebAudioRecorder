@@ -1,28 +1,9 @@
-(function() {
+import { WavRecordingService } from './service/wavRecording.service.js';
+import { RecordingControls } from './controller/recordingControls.controller.js';
+import { StatusDisplayController } from './controller/statusDisplay.controller.js';
+import { TemplateBinderController } from './controller/templateBinder.controller.js';
 
-    if (typeof(NeighborScience) === "undefined") {
-        NeighborScience = {};
-    }
-    if (typeof(NeighborScience.Controller) === "undefined") {
-        NeighborScience.Controller = {}; 
-    }
-
-    NeighborScience.Controller.Main = {
-        Init: init
-    };
-
-    function init() {
-        insertTemplate('tplControls', 'containerControls');
-        insertTemplate('tplDisplay', 'displayContainer');
-        insertTemplate('tplIntroText', 'introTextContainer');
-        Object.assign(NeighborScience.Controller.Main, NeighborScience.Controller.Recording);
-    }
-    
-
-    function insertTemplate(templateId, containerId) {
-        let controlTemplate = document.getElementById(templateId);
-        let controlContainer = document.getElementById(containerId);
-        controlContainer.innerHTML = controlTemplate.innerHTML;
-    }
-
-})();
+let recordingService = new WavRecordingService();
+let templateBinder = new TemplateBinderController();
+window.recordingController = new RecordingControls(recordingService);
+window.displayController = new StatusDisplayController(recordingService);

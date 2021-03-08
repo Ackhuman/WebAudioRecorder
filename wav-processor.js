@@ -33,17 +33,13 @@ class WavProcessor extends AudioWorkletProcessor {
 
     writeBuffer(inputs){
         let inputStream = inputs[0];
-        var sampleIndex = 0;
-        var offset = 0;
-        while(sampleIndex < inputStream[0].length) {
-            let lSample = inputStream[0][sampleIndex];
-            let rSample = inputStream[1][sampleIndex];
-            let monoSample = this.mixDownToMono(lSample, rSample);
-            let clampedSample = this.clamp(monoSample, -1, 1);
-            let pcmSample = this.get16BitPcm(clampedSample);
-            this._view.setInt16(sampleIndex * 2, pcmSample, true);
-            sampleIndex++;
-        }
+        inputStream.forEach(channel => {
+            channel.forEach((sample, sampleIndex) => {
+                let clampedSample = this.clamp(sample, -1, 1);
+                let pcmSample = this.get16BitPcm(clampedSample);
+                this._view.setInt16(sampleIndex * 2, pcmSample, true);
+            });
+        });
         return this._view.buffer.slice();
     }
 

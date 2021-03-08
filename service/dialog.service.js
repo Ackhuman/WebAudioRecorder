@@ -1,42 +1,34 @@
-(function() {
-    if (typeof(NeighborScience) === "undefined") {
-        NeighborScience = {};
-    }
-    NeighborScience.Dialog = {
-        Init: init,
-        Prompt: prompt
-    }; 
-
-    const elements = {
+export class DialogService {
+    _elements = {
         body: null
     };
 
-    function init() {
+    static Init() {
         elements.body = document.querySelector('body');
     }
 
-    function prompt(userOptions) {
+    static Prompt(userOptions) {
         let dialogOptions = Object.assign(
-            createDefaultOptions(), 
+            this._createDefaultOptions(), 
             userOptions
         );
-        return createWindow(dialogOptions);        
+        return this._createWindow(dialogOptions);        
     }
     
-    function closeWindow() {
+    static _closeWindow() {
         document.getElementById('modal').remove();
         document.getElementById('overlay').remove();
     }
 
-    function createWindow(options) {
-        var overlay = createOverlay();
+    static _createWindow(options) {
+        var overlay = this._createOverlay();
         elements.body.append(overlay);
-        let modalContainer = createModalContainer(options);
+        let modalContainer = this._createModalContainer(options);
         elements.body.append(modalContainer);
 
         let dialogPromise = new Promise(function(resolve, reject) {
             overlay.onclick = function(){
-                closeWindow();
+                this._closeWindow();
                 reject();
             };
             let resolvers = [];
@@ -46,7 +38,7 @@
             if(options.valueInputs.length > 0) {
                 let form = document.createElement('form');
                 let inputConfigs = options.valueInputs.map(function(valueInput) {
-                    return createValueInput(valueInput);
+                    return this._createValueInput(valueInput);
                 });
                 let inputs = inputConfigs.map(ic => ic.element);
                 resolvers = inputConfigs.map(ic => ic.resolver);
@@ -56,7 +48,7 @@
             }
             let buttons = options.choices
                 .map(function(choice) {
-                   return createButton(choice, resolve, reject, valueResolver); 
+                   return this._createButton(choice, resolve, reject, valueResolver); 
                 });
             let buttonContainer = document.getElementById('modalControls');
             buttonContainer.append(...buttons);
@@ -70,8 +62,8 @@
     //  placeholder: 'Enter a value',
     //  cssClass: ''
     //}
-    function createValueInput(valueInput) {
-        valueInput = Object.assign(createDefaultValueInput(), valueInput);
+    static _createValueInput(valueInput) {
+        valueInput = Object.assign(this._createDefaultValueInput(), valueInput);
         let valueResolver = () => false;
         let input = document.createElement('input');
         input.name = valueInput.name;
@@ -90,7 +82,7 @@
         return { element: input, resolver: valueResolver };
     }
 
-    function createDefaultValueInput() {
+    static _createDefaultValueInput() {
         return {
             type: 'text',
             name: 'formValue',
@@ -99,7 +91,7 @@
         };
     }
 
-    function createButton(choice, resolve, reject, valueResolver){
+    static _createButton(choice, resolve, reject, valueResolver){
         let button = document.createElement("button");
         button.type = "button";
         let cssClasses = choice.cssClass.split(' ').filter(c => !!c);
@@ -115,20 +107,20 @@
             } else {
                 resolve(formValue);
             }
-            closeWindow();
+            this._closeWindow();
         }
         button.onclick = onClick;
         return button;
     }
 
-    function createOverlay() {
+    static _createOverlay() {
         let overlay = document.createElement('div');
         overlay.id = "overlay";
         overlay.classList.add('modal-bg');
         return overlay;
     }
 
-    function createModalContainer(options) { 
+    static _createModalContainer(options) { 
         let modalContentHtml = `
             <div class="card-header">${options.title}</div>
             <div class="card-body">
@@ -147,7 +139,7 @@
         modalContainer.style.display = 'block';
         return modalContainer;
     }
-    function createDefaultOptions() {
+    static _createDefaultOptions() {
         let options = {
             title: 'Confirm Action',
             text: 'Are you sure you want to proceed?',
@@ -171,4 +163,4 @@
         };
         return options;
     }
-})();
+}
