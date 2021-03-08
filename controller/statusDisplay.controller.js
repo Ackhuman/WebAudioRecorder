@@ -1,5 +1,5 @@
 import { Visualizer } from './visualizer.controller.js';
-import { RecordingStates } from '../service/wavRecording.service.js';
+import { RecordingStates } from '../service/recordingState.service.js';
 
 export class StatusDisplayController {
     elements = {
@@ -21,17 +21,17 @@ export class StatusDisplayController {
 
     updateRecordingState(newState) {
         switch(newState) {
-            case RecordingStates.notStarted.title:
-            case RecordingStates.saved.title:
+            case RecordingStates.notStarted:
+            case RecordingStates.saved:
                 this.resetTimeDisplay();
                 this._visualizer.Reset();
                 break;
-            case RecordingStates.stopped.title:
-            case RecordingStates.paused.title:
+            case RecordingStates.stopped:
+            case RecordingStates.paused:
                 this.stopRecordedTimeDisplay();
                 this._visualizer.PauseOrResume();
                 break;
-            case RecordingStates.started.title:
+            case RecordingStates.started:
                 this.startRecordedTimeDisplay();
                 this._visualizer.Start();
                 break;

@@ -1,5 +1,4 @@
-import { RecordingStates } from '../service/wavRecording.service.js';
-import { DeviceService } from '../service/device.service.js';
+import { RecordingStates } from '../service/recordingState.service.js';
 
 export class RecordingControls {
     _recordingService = null;
@@ -46,13 +45,13 @@ export class RecordingControls {
     _setButtonIcon(recorderState) {        
         let pauseIconClassList = this.elements.btnPause.querySelector('i').classList;
         switch(recorderState) {
-            case RecordingStates.notStarted.title:
-            case RecordingStates.saved.title:
-            case RecordingStates.started.title:
-            case RecordingStates.stopped.title:
+            case RecordingStates.notStarted:
+            case RecordingStates.saved:
+            case RecordingStates.started:
+            case RecordingStates.stopped:
                 pauseIconClassList.replace('fa-play', 'fa-pause');
                 break;
-            case RecordingStates.paused.title:
+            case RecordingStates.paused:
                 pauseIconClassList.replace('fa-pause', 'fa-play');
                 break;
         }
@@ -60,15 +59,15 @@ export class RecordingControls {
 
     _setDisabledState(recorderState) {
         switch(recorderState) {
-            case RecordingStates.notStarted.title:
-            case RecordingStates.saved.title:
+            case RecordingStates.notStarted:
+            case RecordingStates.saved:
                 this._setButtonsDisabledState(false, true, true);
                 break;
-            case RecordingStates.started.title:
-            case RecordingStates.paused.title:
+            case RecordingStates.started:
+            case RecordingStates.paused:
                 this._setButtonsDisabledState(true, false, false);
                 break;
-            case RecordingStates.stopped.title:
+            case RecordingStates.stopped:
                 this._setButtonsDisabledState(false, false, true);
                 break;
         }
